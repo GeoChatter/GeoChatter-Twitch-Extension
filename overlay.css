@@ -1,0 +1,90 @@
+
+html, body {
+	height: 99%;
+}
+
+.map-wrapper {
+	position: relative;
+}
+
+#map {
+	position: absolute;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	left: 0;
+	height: 95vh;
+	width: 100%;
+}
+.btncontainer {
+	display: flex;
+	justify-content: center;
+}
+
+.layersContainer {
+	display: flex;
+	justify-content: right;
+}
+
+#layers {
+	background-color: #d3d3d38c;
+	border-radius: 8px;
+	border: 1px solid rgba(148, 148, 148, 0.85);
+	color: rgb(0, 0, 0);
+	font-weight: bold;
+	font-size: 14px;
+	font-family: sans-serif;
+
+	text-align: center;
+
+	z-index: 1000;
+	position: absolute;
+	padding: 5px;
+	width: fit-content;
+	top: 5%;
+}
+	#layers input {
+		cursor: pointer;
+	}
+
+#guessBtn {
+	background-color: #197819;
+	border-radius: 8px;
+	border: 1px solid rgba(148, 148, 148, 0.85);
+	color: white;
+
+	font-weight: bold;
+	font-size: 16px;
+	font-family: sans-serif;
+
+	text-align: center;
+
+	z-index: 1000;
+	position: absolute;
+	cursor: pointer;
+
+	padding: 10px;
+
+	width: fit-content;
+	top: 80%;
+}
+
+[data-tooltip]:before {
+    position: absolute;
+    content: attr(data-tooltip);
+    opacity: 0;
+    padding: 4px;
+    color: white;
+    border-radius: 10px;
+}
+
+[data-tooltip]:hover:before {
+    opacity: 1;
+    background: #000000cc;
+    margin-top: -40px;
+    z-index: 100000000;
+}
+
+[data-tooltip]:not([data-tooltip-persistent]):before {
+    pointer-events: none;
+}
