@@ -19,6 +19,9 @@ html, body {
 .btncontainer {
 	display: flex;
 	justify-content: center;
+	align-content: flex-end;
+	align-items: flex-end;
+	flex-direction: row;
 }
 
 .layersContainer {
@@ -32,11 +35,9 @@ html, body {
 	border: 1px solid rgba(148, 148, 148, 0.85);
 	color: rgb(0, 0, 0);
 	font-weight: bold;
-	font-size: 14px;
+	font-size: 16px;
 	font-family: sans-serif;
-
 	text-align: center;
-
 	z-index: 1000;
 	position: absolute;
 	padding: 5px;
@@ -45,6 +46,7 @@ html, body {
 }
 	#layers input {
 		cursor: pointer;
+		scale: 1.8;
 	}
 
 #guessBtn {
@@ -52,19 +54,14 @@ html, body {
 	border-radius: 8px;
 	border: 1px solid rgba(148, 148, 148, 0.85);
 	color: white;
-
 	font-weight: bold;
-	font-size: 16px;
+	font-size: 18px;
 	font-family: sans-serif;
-
 	text-align: center;
-
 	z-index: 1000;
 	position: absolute;
 	cursor: pointer;
-
-	padding: 10px;
-
+	padding: 18px;
 	width: fit-content;
 	top: 80%;
 }
