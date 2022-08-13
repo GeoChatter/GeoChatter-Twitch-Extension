@@ -3,6 +3,54 @@ html, body {
 	height: 99%;
 }
 
+.dropbtn {
+	background-color: #008000db;
+	color: white;
+	padding: 8px 12px;
+	border: 2px solid white;
+	font-size: 1rem;
+	cursor: pointer;
+	border-radius: 8px;
+	}
+  
+  .dropdown {
+	position: relative;
+	display: inline-block;
+  }
+  
+  .dropdown-content {
+	display: none;
+	position: sticky;
+	right: 0;
+	background-color: #ffffff61;
+	border-radius: 8px;
+	box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+	z-index: 1;
+	}
+  
+  .dropdown-content button {
+	color: white;
+	padding: 12px 16px;
+	text-decoration: none;
+	display: block;
+	border: 2px solid white;
+	}
+  
+  .dropdown-content button:hover {background-color: #f1f1f1;}
+  
+  .dropdown:hover .dropdown-content {
+	display: flex;
+	flex-direction: column;
+	}
+  
+  .dropdown:hover .dropbtn {
+	background-color: #c02d00bd;
+	}
+
+button:hover {
+	text-decoration: underline;
+}
+
 .map-wrapper {
 	position: relative;
 }
@@ -18,15 +66,16 @@ html, body {
 }
 .btncontainer {
 	display: flex;
-	justify-content: center;
-	align-content: flex-end;
-	align-items: flex-end;
-	flex-direction: row;
+    justify-content: flex-end;
+    align-content: flex-end;
+    align-items: flex-end;
+    flex-direction: row;
 }
 
 .layersContainer {
 	display: flex;
 	justify-content: right;
+	z-index: 1000;
 }
 
 #layers {
@@ -39,10 +88,7 @@ html, body {
 	font-family: sans-serif;
 	text-align: center;
 	z-index: 1000;
-	position: absolute;
-	padding: 5px;
 	width: fit-content;
-	top: 5%;
 }
 	#layers input {
 		cursor: pointer;
@@ -50,20 +96,20 @@ html, body {
 	}
 
 #guessBtn {
-	background-color: #197819;
+	background-color: #19770be3;
 	border-radius: 8px;
 	border: 1px solid rgba(148, 148, 148, 0.85);
 	color: white;
 	font-weight: bold;
-	font-size: 18px;
+	font-size: 16px;
 	font-family: sans-serif;
 	text-align: center;
 	z-index: 1000;
-	position: absolute;
 	cursor: pointer;
-	padding: 18px;
-	width: fit-content;
-	top: 80%;
+	padding: 8px;
+	bottom: 35px;
+	position: absolute;
+	width: 50%;
 }
 
 [data-tooltip]:before {

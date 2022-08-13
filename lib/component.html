@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>GeoChatter-Map Leaflet</title>
+
+  <base target="_blank">
+  
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <script src="https://extension-files.twitch.tv/helper/v1/twitch-ext.min.js"></script>
+  
+  <link rel="stylesheet" href="./leaflet.css"/>
+  <link rel="stylesheet" href="./overlay.css"/>
+
+  <script src="./jquery-3.6.0.min.js"></script>
+</head>
+<body>
+  <div class="map-wrapper">
+    <div id="map"></div>
+  </div>
+  <div class="btncontainer">
+    <div class="layersContainer">
+      <div class="dropdown" style="float:right;">
+        <button class="dropbtn" style="
+        font-size: 1.1rem;
+        text-transform: uppercase;">Layers</button>
+        <div id="layers" class="dropdown-content">
+          <button id="inputStMp" class="dropbtn">Streets</button>
+          <button id="inputSate" class="dropbtn">Satellite</button>
+        </div>
+      </div>
+    </div>
+    <div id="guessBtn">
+      Send Guess
+    </div>
+  </div>
+  <script src="./app.js"></script>
+</body>
+</html>
