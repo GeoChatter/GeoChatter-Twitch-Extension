@@ -36,17 +36,13 @@ export namespace Setting {
   }
 
   export function getvalues() {
-    // needs node 17 to work
     const values = structuredClone(_values)
-    // const values = JSON.parse(JSON.stringify(_values))
 
     for (const key of Object.keys(streamerSettings)) {
       if (streamerSettings[key] === false) {
         values[key] = streamerSettings[key]
       }
     }
-    // not sure how to refresh the store here?
-    // refresh()
     return values
   }
 
@@ -78,3 +74,5 @@ export namespace Setting {
     }
   }
 }
+
+window.Setting = Setting;

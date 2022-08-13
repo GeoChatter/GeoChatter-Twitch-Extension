@@ -9,7 +9,7 @@ export namespace Constant
     export const MIN_ZOOM = 2;
     export const MAX_ZOOM = 22;
     
-    export const ATTRIBUTIONS = "&copy; <a title='Tile provider' href='https://www.mapbox.com/about/maps/'>Mapbox</a> &copy; <a title='Map data contributors' href='http://www.openstreetmap.org/copyright'>OpenStreetMap</a> &copy; <a title='Extension and game maintainers' href='https://geochatter.tv/?wpautoterms_page=terms-and-conditions'>GeoChatter</a>";
+    export const ATTRIBUTIONS = "&copy; <a title='Tile provider' href='https://www.mapbox.com/about/maps/'>Mapbox</a> &copy; <a title='Map data contributors' href='http://www.openstreetmap.org/copyright'>OpenStreetMap</a> &copy; <a title='Extension and game maintainers' href='https://geochatter.tv/?wpautoterms_page=terms-and-conditions'>GC</a>";
     
     export const ACCESS_TOKEN = "pk.eyJ1Ijoic2VtaWhtIiwiYSI6ImNsMTF2NGVlNDA5cnoza3JzbmJqMzQwOWsifQ.WxIxVI6jvg8K25f283ttKQ";
     export const DEFAULT_LAYER = 'https://api.mapbox.com/styles/v1/semihm/ckxvy72ks45v114oe7o1cwbxs/tiles/512/{z}/{x}/{y}@2x?optimize=true&access_token=';
@@ -70,23 +70,21 @@ export namespace App
             zoomOffset: -1
         })
     }
-    export var latlng = "";
-    export var botname = "";
-
-    export var last = {lat: 0, lng: 0};
+    export var LatLngLiteral = "";
+    export var GameName = "";
 
     export let helix = {
         'Client-ID': Constant.CLIENT_ID,
         'Authorization': 'Extension '
     };
-    export let data = {
+    export let User = {
         id: "",
         login: "",
         display_name: "",
         profile_image_url: ""
     };
 
-    export var auth = {
+    export var AuthData = {
         channelId: "",
         clientId: "",
         helixToken: "",
@@ -117,3 +115,7 @@ export namespace App
         [Enum.FAIL_NAME.INTERNAL]: "Something went wrong, reload the page."
     }
 }
+
+window.Enum = Enum;
+window.Constant = Constant;
+window.App = App;

@@ -1,5 +1,14 @@
 declare export global
 {
+    export interface Window
+    {
+        App: {},
+        Enum: {},
+        Constant: {},
+        Connection: {},
+        Setting: {},
+    }
+
     export type ValueOf<T> = T[keyof T];
     
     export type StreamerSettings = {

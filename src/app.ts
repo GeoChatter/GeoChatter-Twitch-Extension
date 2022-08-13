@@ -55,15 +55,15 @@ function sendGuessClick(){
     }
 
     var send: GuessData & {[k: string]: any} = {
-    "bot": `${App.botname}`,
-    "lat": `${App.last.lat}`,
-    "lng": `${App.last.lng}`,
-    "hlx": `${(App.auth.helixToken ? App.auth.helixToken : "")}`,
-    "tkn": `${App.auth.token}`,
-    "id": `${App.data.id ? App.data.id : twitch.viewer.id}`,
-    "name": `${App.data.login}`,
-    "display": `${App.data.display_name}`,
-    "pic": `${App.data.profile_image_url}`,
+    "bot": `${App.GameName}`,
+    "lat": `${App.CurrentGuess.lat}`,
+    "lng": `${App.CurrentGuess.lng}`,
+    "hlx": `${(App.AuthData.helixToken ? App.AuthData.helixToken : "")}`,
+    "tkn": `${App.AuthData.token}`,
+    "id": `${App.User.id ? App.User.id : twitch.viewer.id}`,
+    "name": `${App.User.login}`,
+    "display": `${App.User.display_name}`,
+    "pic": `${App.User.profile_image_url}`,
     isTemporary: false, isRandom: false,
     sourcePlatform: "Twitch",
     "src": "extension"
@@ -75,7 +75,7 @@ function sendGuessClick(){
 async function collectHelix() {
     
     var id = twitch.viewer.id;
-    var hlx = isMobile ? App.auth.helixToken : twitch.viewer.helixToken;
+    var hlx = isMobile ? App.AuthData.helixToken : twitch.viewer.helixToken;
     if (!hlx || !id) return;
 
     App.helix['Authorization'] = 'Extension ' + hlx
@@ -91,7 +91,7 @@ async function collectHelix() {
         return resp.json();
     })
     .then(resp => {
-        App.data = resp.data[0];
+        App.User = resp.data[0];
     })
     .catch(err => {
         console.log(err);
@@ -103,8 +103,8 @@ function onMapClick(e: L.LeafletMouseEvent) {
 
     if(App.CurrentPopup == null) return;
 
-    App.last.lat = e.latlng.lat;
-    App.last.lng = e.latlng.lng;
+    App.CurrentGuess.lat = e.latlng.lat;
+    App.CurrentGuess.lng = e.latlng.lng;
 
 
     if (App.CurrentMarker != null)
@@ -138,6 +138,7 @@ function onMapClick(e: L.LeafletMouseEvent) {
 
 function setError(name: FAIL_NAME)
 {
+    console.error(name);
     App.LastError = name;
     if (guessBtn) guessBtn.textContent = App.FAIL_MESSAGE[App.LastError]
 }
@@ -146,12 +147,14 @@ function sendGuess(data: GuessData)
 {
     if (!App.CanSendGuess || (App.LastError != Enum.FAIL_NAME.NONE)) return
 
+    App.CanSendGuess = false;
     Connection.sendGuess(data)
         .then(res =>
         {
+            console.log(res);
             if (res[1] < 0)
             {
-                setError(Enum.FAIL_NAME.INTERNAL)
+                setError(Enum.FAIL_NAME.SERVER_OFFLINE)
             }
             else{
                 enableGuessButton();
@@ -181,14 +184,14 @@ twitch.configuration.onChanged(function() {
       try {
         var config = JSON.parse(twitch.configuration.broadcaster.content);
         if (typeof config === 'object' && "gc_botname" in config) {
-          App.botname = config.gc_botname;
+          App.GameName = config.gc_botname;
         }
       } catch {}
     }
 });
 
 twitch.onAuthorized(async (a) => {
-    App.auth = {
+    App.AuthData = {
         channelId: a.channelId,
         clientId: a.clientId,
         helixToken: a.helixToken,
@@ -224,16 +227,17 @@ setTimeout(async () =>
         await collectHelix();
     }
 
-    if (!isMobile || App.data.profile_image_url)
+    if (!isMobile || App.User.profile_image_url)
     {
         var avatar = new App.LeafIcon({
-            iconUrl: App.data.profile_image_url,
+            iconUrl: App.User.profile_image_url,
         })
         App.CurrentMarker = new L.Marker([0, 0],{icon:avatar}).addTo(App.Map);
     }
 
     var i = document.createElement("style");
-    i.innerHTML = `img[src='${App.data.profile_image_url}']{border: 3px solid white; border-radius: 100%;}`;
+    i.innerHTML = `img[src='${App.User.profile_image_url}']{border: 3px solid white; border-radius: 100%;}`;
     document.head.appendChild(i);
 
-}, 750);
+    await Connection.startConnection(App.GameName)
+}, 1250);

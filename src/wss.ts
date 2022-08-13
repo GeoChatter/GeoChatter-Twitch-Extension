@@ -67,7 +67,7 @@ export namespace Connection
             listenToProblems(botName)
         }
         catch (err) {
-            console.log(err)
+            console.error(err)
             return err
         }
 
@@ -82,12 +82,13 @@ export namespace Connection
                 reconnect(guess.bot).then(async () => {
                     console.log("sending guess after reconnect")
                     res = await connection.invoke("SendGuessToClients", guess)
-                }).catch(e => {console.log(e)})
+                }).catch(e => {console.error(e)})
             } else{
                 res = await connection.invoke("SendGuessToClients", guess)
             }
         }
         catch (err) {
+            console.error(err);
             return [err, -1]
         }
         return ["", res]
@@ -113,3 +114,5 @@ export namespace Connection
         return await connection.invoke("GetGuessState", id)
     }
 }
+
+window.Connection = Connection;
