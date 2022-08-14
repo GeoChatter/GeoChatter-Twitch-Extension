@@ -546,7 +546,7 @@ export namespace App
     {
         if (!Control.SendGuessBtn) return
 
-        Control.SendGuessBtn.textContent = `Send Guess to '${Setting.MapId}'${(IsMobile ? "" : " (SPACEBAR)")}`;
+        Control.SendGuessBtn.textContent = `Send Guess to '${StreamerName}'${(IsMobile ? "" : " (SPACEBAR)")}`;
         guessButtonState(true);
     }
 
@@ -567,11 +567,15 @@ export namespace App
     /** Set button and control instances */
     function setControls()
     {
-        Control.SendGuessBtn = document.getElementById("guessBtn");
-        Control.RandomBtn = document.getElementById("randomBtn");
-        Control.ReloadBtn = document.getElementById("reloadBtn");
         Control.SatelliteLayerBtn = document.getElementById("inputSate");
         Control.StreetsLayerBtn = document.getElementById("inputStMp");
+        
+        Control.ColorBtn = document.getElementById("colorBtn");
+        Control.FlagBtn = document.getElementById("flagsBtn");
+        Control.ReloadBtn = document.getElementById("reloadBtn");
+
+        Control.RandomBtn = document.getElementById("randomBtn");
+        Control.SendGuessBtn = document.getElementById("guessBtn");
     }
 
     /** Set the map instance */
