@@ -1,41 +1,82 @@
+/// <reference path="../node_modules/@types/twitch-ext/index.d.ts"/>
+
 declare export global
 {
     export interface Window
     {
+        /** Main app */
         App: {},
+        /** Enums */
         Enum: {},
+        /** Constants */
         Constant: {},
+        /** Controls and elements */
+        Control: {},
+        /** WSS Connection Utils */
         Connection: {},
+        /** App settings */
         Setting: {},
     }
 
+    /** T may be null or undefined */
+    export type Nullable<T> = T | null | undefined;
+
+    /** A value of T */
     export type ValueOf<T> = T[keyof T];
-    
+
+    /** Coordinates */
+    export type Coordinates = {
+        /** Latitude */
+        lat: number,
+        /** Longitude */
+        lng: number,
+        /** Wheter to use randomization, ignoring values sent */
+        randomize: boolean
+    }
+
+    /** Settings set by streamer */
     export type StreamerSettings = {
+        /** Allow drawing borders */
         borders: boolean,
+        /** Allow displaying flags */
         flags: boolean,
+        /** Allow stream popup */
         streamOverlay: boolean,
+        /** ADM-1 level borders, disable for US-streak games */
         borderAdmin: boolean,
+        /** Allow temporary guesses */
         temporaryGuesses: boolean,
-        streamer: any,
+        /** Streamer name */
+        streamer: Nullable<string>,
+
         [key: string]: any
     }
 
     export type GeneralSettings = {
+        /** Unused */
         _3d: boolean,
+        /** Unused */
         sens: number,
+        /** Unused */
         ex: number,
+        /** Unused */
         globe: boolean,
+        /** Unused */
         copyAndPaste: boolean,
+        /** Unused */
         drawerOpen: boolean,
+        /** Unused */
         globeView: boolean,
-        testing: boolean
-    } & StreamerSetting
+        /** Unused */
+        testing: boolean,
+        
+        [key: string]: any
+    }
     
     export type UserData = {
         bot: string;
         tkn: string;
-        sourcePlatform: "Twitch" | "YouTube"
+        sourcePlatform: "Twitch" // | "YouTube"
         id: string;
         name: string;
         display: string;

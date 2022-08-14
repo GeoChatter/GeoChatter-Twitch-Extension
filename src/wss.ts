@@ -3,13 +3,20 @@ import * as signalR from '@microsoft/signalr';
 import {Constant} from './core';
 import {Setting} from './settings';
 
+/** WSS methods */
 export namespace Connection
 {
-    export const connection = new signalR.HubConnectionBuilder().withUrl(Constant.HUB, {}).build();
+    /** Main connection */
+    export const connection: signalR.HubConnection = new signalR.HubConnectionBuilder()
+        .withUrl(Constant.DEBUG ? Constant.DEV_HUB : Constant.PROD_HUB, {})
+        .build();
 
-    export const killConnection = async () => {
+    /** Kill current connection */
+    export async function killConnection(){
         await connection.stop()
     }
+
+    /** Set settings */
     export function setStreamerSettings(options: GeneralSettings){
         Object.entries(options).forEach(([key, value]) => {
 
@@ -22,14 +29,17 @@ export namespace Connection
             Setting.changeStreamerSettings(key, value)
         })
     }
+
+    /** Listen to setting changes */
     export function listenToMapFeatures()
     {
         connection.on("SetMapFeatures", function (options) {
+            console.log("SetMapFeatures", options)
             setStreamerSettings(options)
-            console.log(options)
         })
     };
 
+    /** Reconnect */
     export async function reconnect(botName?: string){
         if (!botName) return 
         console.log("reconnecting")
@@ -40,47 +50,56 @@ export namespace Connection
         }
     }
 
+    /** Listen to failures */
     export function listenToProblems(botName: string){
         connection.onreconnecting = (e: any) => {
-            console.log("default reconnecting from singalR",e)
+            console.log("dDefault reconnecting from singalR",e)
         }
         connection.onclose = (e: any) => {
-            console.log("signalR connection closed trying to reconnect manually", e)
+            console.log("SignalR connection closed trying to reconnect manually", e)
             setTimeout(() => reconnect(botName), 1000)
         }
     }
 
+    /** Start the connection */
     export async function startConnection(botName: string){
 
-        // start the connection and login to client
         try {
             const startRes = await connection.start()
-            console.log("connection started", startRes)
+            console.log("Connection started", startRes)
+
+            await getMapId(botName)
+                .then(id => {
+                    Setting.MapId = id;
+                })
+                .catch(console.error)
+
+            console.log("MapId", Setting.MapId)
+
             const res = await connection.invoke("MapLogin", botName)
             if (res) {
                 console.log(res)
                 setStreamerSettings(res)
             }
-            console.log("logged in to map", res)
+            console.log("Logged in to map", res)
             listenToMapFeatures()
-            console.log("listening to map features")
+            console.log("Listening to map features")
             listenToProblems(botName)
         }
         catch (err) {
             console.error(err)
             return err
         }
-
-
     }
 
+    /** Send a guess */
     export async function sendGuess(guess: GuessData): Promise<[string | unknown, number]>{
         let res: number = 0
         try {
             if (connection.state !== "Connected") {
-                console.log("not connected trying to reconnect before sending guess")
+                console.warn("Not connected trying to reconnect before sending guess")
                 reconnect(guess.bot).then(async () => {
-                    console.log("sending guess after reconnect")
+                    console.log("Sending guess after reconnect")
                     res = await connection.invoke("SendGuessToClients", guess)
                 }).catch(e => {console.error(e)})
             } else{
@@ -94,7 +113,8 @@ export namespace Connection
         return ["", res]
     }
 
-    export async function SendFlagToClients(data: FlagData){
+    /** Send user flag request */
+    export async function sendFlagToClients(data: FlagData){
         try {
             const res = await connection.invoke("SendFlagToClients", data)
             return res
@@ -105,13 +125,21 @@ export namespace Connection
         }
     }
 
+    /** Send user color request */
     export async function sendColor(data: ColorData){
         await connection.invoke("SendColorToClients", data)
     }
 
-    export async function getGuessState(id:number){
+    /** Get state of a sent guess */
+    export async function getGuessState(id:number): Promise<GuessState>{
 
         return await connection.invoke("GetGuessState", id)
+    }
+    
+    /** Get map id for the current connection */
+    export async function getMapId(channelName:string): Promise<string>{
+
+        return await connection.invoke("GetMapId", channelName)
     }
 }
 

@@ -2,45 +2,42 @@
 export namespace Setting {
   var refresh = () => {
     // TODO
+    console.log("Refresh recieved")
   };
   
-  var _values: GeneralSettings = {
+  export var MapId: Nullable<string> = ""
+  
+  export var General = {
     _3d: true,
     sens: 100,
     ex: 1,
     globe: false,
     copyAndPaste: false,
-    borderAdmin: false,
-    borders: true,
     drawerOpen: false,
     globeView: true,
-    flags: true,
-    streamOverlay: true,
-    temporaryGuesses: true,
     testing: false,
-    streamer: undefined
-  }
+  } as GeneralSettings
 
-  var streamerSettings: StreamerSettings = {
+  export var Streamer: StreamerSettings = {
     borders: false,
+    borderAdmin: false,
     flags: false,
     streamOverlay: false,
-    borderAdmin: false,
     temporaryGuesses: false,
     streamer: undefined
   }
 
-  export function changeStreamerSettings(key: keyof typeof streamerSettings, newVal: ValueOf<typeof streamerSettings>) {
-    streamerSettings[key] = newVal
+  export function changeStreamerSettings(key: keyof typeof Streamer, newVal: ValueOf<typeof Streamer>) {
+    Streamer[key] = newVal
     refresh()
   }
 
-  export function getvalues() {
-    const values = structuredClone(_values)
+  export function getvalues(): any {
+    const values = structuredClone(General)
 
-    for (const key of Object.keys(streamerSettings)) {
-      if (streamerSettings[key] === false) {
-        values[key] = streamerSettings[key]
+    for (const key of Object.keys(Streamer)) {
+      if (Streamer[key] === false) {
+        values[key] = Streamer[key]
       }
     }
     return values
@@ -48,22 +45,23 @@ export namespace Setting {
 
   export function initialize() {
     load()
-    console.log(_values)
+    console.log(General)
   }
 
   export function load() {
     let loadedObj = JSON.parse(localStorage.getItem("settings") ?? "{}") ?? {}
     for (const key of Object.keys(loadedObj)) {
-    _values[key] = loadedObj[key]
+      General[key] = loadedObj[key]
     }
   }
 
   export function save() {
       localStorage.setItem("settings", JSON.stringify(getvalues()))
   }
-  export function change(key: keyof typeof _values, newVal: ValueOf<typeof _values>) {
-    if (typeof _values[key] !== undefined && Object.keys(_values).indexOf(key.toString())) {
-      _values[key] = newVal
+
+  export function change(key: keyof typeof General, newVal: ValueOf<typeof General>) {
+    if (typeof General[key] !== undefined && Object.keys(General).indexOf(key.toString()) >= 0) {
+      General[key] = newVal
       save()
       refresh()
     }
