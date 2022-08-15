@@ -1,4 +1,5 @@
 import { Constant, Enum } from "./core"
+import { Color } from "./colors"
 import { Control } from "./controls"
 import { Connection } from "./wss"
 import * as L from 'leaflet';
@@ -244,7 +245,7 @@ export namespace App
     async function handleReload()
     {
         removeEventListeners();
-        await Connection.killConnection();
+        await Connection.stopConnection();
 
         Main();
     }
@@ -274,7 +275,7 @@ export namespace App
             return;
         }
 
-        var send: GuessData & {[k: string]: any} = 
+        var send: GuessData = 
         {
             bot: `${Setting.MapId}`,
             lat: `${CurrentGuess.lat}`,
@@ -427,7 +428,7 @@ export namespace App
         b.style.fontWeight = "bolder"
         document.body = b;
 
-        if (killconnection) Connection.killConnection();
+        if (killconnection) Connection.stopConnection();
     }
 
     /** Determine what to do upon recieved guess state, return wheter to exit guess state checker */
@@ -447,7 +448,7 @@ export namespace App
                 }
             case Enum.GuessState.BotNotFound:
                 {
-                    setError(Enum.FAIL_NAME.NONE, "No game found for: " + Setting.MapId);
+                    setError(Enum.FAIL_NAME.NONE, "No game found for: " + (Setting.MapId ? Setting.MapId : StreamerName));
                     setTimeout(enableGuessButton, 3000);
                     break;
                 }
@@ -564,6 +565,60 @@ export namespace App
         if (User.display_name) localStorage.setItem("user_display_name", User.display_name);
     }
 
+    function handleColorChange()
+    {
+        if (!Control.ColorPicker) return;
+
+        var color = $(Control.ColorPicker).val() as string
+
+        if (!color) return;
+
+        var send: ColorData = 
+        {
+            bot: `${Setting.MapId}`,
+            hlx: `${(AuthData.helixToken ? AuthData.helixToken : "")}`,
+            tkn: `${AuthData.token}`,
+            id: `${User.id ? User.id : TwitchExt.viewer.id}`,
+            name: `${User.login}`,
+            display: `${User.display_name}`,
+            pic: `${User.profile_image_url}`,
+            sourcePlatform: "Twitch",
+            src: "extension",
+            color: color
+        };
+
+        Connection.sendColor(send);
+    }
+
+    var colorPickerTimerId: Nullable<number>;
+
+    function handleColorPickerInput()
+    {
+        if (!Control.ColorPicker) return;
+
+        let cp = $(Control.ColorPicker);
+        if (colorPickerTimerId) {
+            clearTimeout(colorPickerTimerId);
+        }
+        colorPickerTimerId = setTimeout(function () {
+            if (Control.ColorBtn)
+            {
+                let el = $(Control.ColorBtn);
+                let clr = cp.val() as string;
+
+                el.css('background-color', clr);
+
+                if (Color.ShouldUseDark(clr))
+                {
+                    if (!el.hasClass("colorBtn-dark")) el.addClass("colorBtn-dark")
+                }
+                else
+                {
+                    el.removeClass("colorBtn-dark");
+                }
+            }
+        }, 50);
+    }
     /** Set button and control instances */
     function setControls()
     {
@@ -571,11 +626,19 @@ export namespace App
         Control.StreetsLayerBtn = document.getElementById("inputStMp");
         
         Control.ColorBtn = document.getElementById("colorBtn");
+        Control.ColorPicker = document.getElementById("colorPicker");
         Control.FlagBtn = document.getElementById("flagsBtn");
         Control.ReloadBtn = document.getElementById("reloadBtn");
 
         Control.RandomBtn = document.getElementById("randomBtn");
         Control.SendGuessBtn = document.getElementById("guessBtn");
+
+        if (Control.ColorPicker)
+        {
+            $(Control.ColorPicker)
+                .on("input", handleColorPickerInput)
+                .on("change", handleColorChange)
+        }
     }
 
     /** Set the map instance */

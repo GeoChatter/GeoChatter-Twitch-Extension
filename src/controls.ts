@@ -5,9 +5,11 @@ export namespace Control
 {
     /** Send Guess button */
     export var SendGuessBtn: Nullable<HTMLElement>;
-    /** Reload button */
+    /** Color change button */
     export var ColorBtn: Nullable<HTMLElement>;
-    /** Reload button */
+    /** Color picker input */
+    export var ColorPicker: Nullable<HTMLElement>;
+    /** Flag change button */
     export var FlagBtn: Nullable<HTMLElement>;
     /** Reload button */
     export var ReloadBtn: Nullable<HTMLElement>;

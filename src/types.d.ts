@@ -1,4 +1,5 @@
 /// <reference path="../node_modules/@types/twitch-ext/index.d.ts"/>
+/// <reference path="../node_modules/@types/jquery/index.d.ts"/>
 
 declare export global
 {
@@ -10,6 +11,8 @@ declare export global
         Enum: {},
         /** Constants */
         Constant: {},
+        /** Color utilities */
+        Color: {},
         /** Controls and elements */
         Control: {},
         /** WSS Connection Utils */
@@ -75,8 +78,10 @@ declare export global
     
     export type UserData = {
         bot: string;
+        hlx: string;
         tkn: string;
-        sourcePlatform: "Twitch" // | "YouTube"
+        src: "extension";
+        sourcePlatform: "Twitch"
         id: string;
         name: string;
         display: string;
