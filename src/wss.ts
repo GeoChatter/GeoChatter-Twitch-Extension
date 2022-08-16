@@ -1,126 +1,174 @@
-/// <reference path="types.d.ts" />
 import * as signalR from '@microsoft/signalr';
-import {Constant} from './core';
-import {Setting} from './settings';
+import { Constant } from "./constants";
+import { Enum } from "./enums";
+import { Setting } from './settings';
 
 /** WSS methods */
 export namespace Connection
 {
     /** Main connection */
-    export const connection: signalR.HubConnection = new signalR.HubConnectionBuilder()
+    export const CurrentConnection: signalR.HubConnection = new signalR.HubConnectionBuilder()
         .withUrl(Constant.DEBUG ? Constant.DEV_HUB : Constant.PROD_HUB, {})
         .build();
 
     /** Stop current connection */
-    export async function stopConnection()
+    export async function StopConnection()
     {
-        console.log("Stopping current connection")
-        await connection.stop()
+        Logger.info(Msg("Stopping current connection"))
+        await CurrentConnection.stop()
     }
 
     /** Set settings */
-    export function setStreamerSettings(options: GeneralSettings)
+    function setStreamerSettings(options: StreamerSettings)
     {
-        console.log("Setting streamer settings", options)
+        Logger.log(Msg("Setting streamer settings"), Msg(options))
         Object.entries(options).forEach(([key, value]) => {
 
-            key = key.replace("show", "")
-            key = key.charAt(0).toLowerCase() + key.slice(1)
             if (key === "isUSStreak") {
                 key = "borderAdmin"
                 value = !value
             }
-            Setting.changeStreamerSettings(key, value)
+            Setting.ChangeStreamerSettings(key as keyof StreamerSettings, value)
         })
     }
 
     /** Listen to setting changes */
-    export function listenToMapFeatures()
+    function listenToMapFeatures()
     {
-        console.log("Listening to map features")
+        Logger.log(Msg("Listening to map features"))
 
-        connection.on("SetMapFeatures", function (options) {
-            console.log("SetMapFeatures", options)
+        CurrentConnection.on("SetMapFeatures", function (options) {
+            Logger.log(Msg("SetMapFeatures"), Debug(options))
             setStreamerSettings(options)
         })
     };
 
     /** Reconnect */
-    export async function reconnect(botName?: string)
+    async function reconnect(mapId?: string)
     {
-        if (!botName) return 
+        try
+        {
+            if (!mapId) return Logger.warn(Msg("Can not reconnect with empty mapId"));
 
-        console.log("Reconnecting")
+            Logger.info(Msg("Reconnecting"))
 
-        await connection.start()
+            await CurrentConnection.start()
 
-        const res = await connection.invoke("MapLogin", botName)
-        if (res) {
-            setStreamerSettings(res)
+            await mapLogin(mapId);
+        }
+        catch(e)
+        {
+            Logger.error(Msg(e));
+        }
+    }
+
+    /** Get map initial data */
+    async function mapLogin(mapId: string)
+    {
+        try
+        {
+            if (!mapId) return Logger.warn(Msg("Can not invoke MapLogin with invalid mapId"));
+
+            Logger.log(Msg("Invoke MapLogin, mapId"), Debug(mapId));
+
+            const res = await CurrentConnection.invoke("MapLogin", mapId);
+
+            if (res)
+            {
+                Logger.log(Msg("MapLogin received"), Debug(res))
+                setStreamerSettings(res)
+            }
+            else
+            {
+                Logger.warn(Msg("MapLogin empty"))
+            }
+        }
+        catch(e)
+        {
+            Logger.error(Msg(e));
         }
     }
 
     /** Listen to failures */
-    export function listenToProblems(botName: string)
+    function listenToProblems(mapId: string)
     {
-        console.log("Listening connection close events")
-        connection.onreconnecting = (e: any) => {
-            console.log("Default reconnecting from singalR",e)
+        Logger.log(Msg("Listening connection close events"))
+        CurrentConnection.onreconnecting = (e: any) => {
+            Logger.log(Msg("Default reconnecting from singalR"),Debug(e))
         }
-        connection.onclose = (e: any) => {
-            console.log("SignalR connection closed trying to reconnect manually", e)
-            setTimeout(() => reconnect(botName), 1000)
+        CurrentConnection.onclose = (e: any) => {
+            Logger.log(Msg("SignalR connection closed trying to reconnect manually"), Debug(e))
+            setTimeout(() => reconnect(mapId), 1000)
         }
     }
 
     /** Start the connection */
-    export async function startConnection(botName: string){
+    export async function StartConnection(botName: string): Promise<Nullable<string>>
+    {
 
         try 
-        {
-            const startRes = await connection.start()
-            console.log("Connection started", startRes)
+        {            
+            if (!botName) return Logger.error(Msg("Can't invoke MapLogin with invalid botName"))
 
-            await getMapId(botName)
-                .then(id => {
-                    Setting.MapId = id;
-                    console.log("MapId", Setting.MapId)
+            await CurrentConnection.start()
+            Logger.info(Msg("Connection started"))
+
+            let id = await GetMapID(botName)
+                .catch(err => {
+                    Logger.error(Msg(err));
                 })
-                .catch(console.error)
-
-
-            const res = await connection.invoke("MapLogin", botName)
-            if (res) {
-                console.log(res)
-                setStreamerSettings(res)
+            if (id)
+            {
+                Setting.MapId = id;
+                Logger.log(Msg("MapId received"), Debug(Setting.MapId))
+            }
+            else
+            {
+                Logger.warn(Msg("MapId empty"))
             }
 
+            if (!Setting.MapId)
+            {
+                return "Stopping the connection because MapId was empty";
+            }
+
+            await mapLogin(Setting.MapId);
+            
             listenToMapFeatures()
 
             listenToProblems(botName)
+            return null;
         }
         catch (err) 
         {
-            console.error(err)
-            return err
+            Logger.error(Msg(err))
+            return err as string;
         }
     }
 
     /** Send a guess */
-    export async function sendGuess(guess: GuessData): Promise<[string | unknown, number]>
+    export async function SendGuess(guess: GuessData): Promise<[string | unknown, number]>
     {
         try 
         {
-            if (connection.state !== "Connected") 
-            {
-                console.warn("Not connected, trying to reconnect before sending guess")
+            if (!VerifyMessage(guess) 
+                || !guess.lat 
+                || !guess.lng 
+                || (guess.isRandom && guess.isTemporary)) return Logger.error(Msg("Can't invoke SendGuessToClients with invalid data"), Debug(guess))
 
-                return await reconnect(guess.bot)
-                    .then(async () => {
-                        console.log("Sending guess after reconnect", guess)
-                        return await _sendGuess(guess)
-                    })
+            if (CurrentConnection.state !== "Connected") 
+            {
+                Logger.warn(Msg("Not connected, trying to reconnect before sending guess"))
+
+                await reconnect(guess.bot)
                     .catch(e => [e, -1]);
+
+                Logger.log(Msg("Sending guess after reconnect"), Debug(guess))
+
+                let r = await _sendGuess(guess)
+                    .catch(e => [e, -1]);
+
+                return r as [any, any];
             } 
             else
             {
@@ -129,7 +177,7 @@ export namespace Connection
         }
         catch (err) 
         {
-            console.error(err);
+            Logger.error(Msg(err));
             return [err, -1]
         }
     }
@@ -139,52 +187,87 @@ export namespace Connection
         let res: number = -1
         try 
         {
-            console.log("Invoke SendGuessToClients, guess data:", guess)
-            res = await connection.invoke("SendGuessToClients", guess)
+            Logger.log(Msg("Invoke SendGuessToClients, guess data:"), Debug(guess))
+            res = await CurrentConnection.invoke("SendGuessToClients", guess)
         }
         catch (err) 
         {
-            console.error(err);
+            Logger.error(Msg(err));
             return [err, -1]
         }
         return ["", res]
     }
 
     /** Send user flag request */
-    export async function sendFlagToClients(data: FlagData)
+    export async function SendFlag(data: FlagData)
     {
         try 
         {
-            console.log("Invoke SendFlagToClients, flag data:", data)
-            const res = await connection.invoke("SendFlagToClients", data)
-            return res
+            if (!VerifyMessage(data) || !data.flag) return Logger.error(Msg("Can't invoke SendFlagToClients with invalid data"), Debug(data))
 
-        } catch (err) 
+            Logger.log(Msg("Invoke SendFlagToClients, flag data"), Debug(data))
+            await CurrentConnection.invoke("SendFlagToClients", data)
+        } 
+        catch (err) 
         {
-            console.log(err)
-            return err
+            Logger.error(Msg(err))
         }
     }
 
     /** Send user color request */
-    export async function sendColor(data: ColorData)
+    export async function SendColor(data: ColorData)
     {
-        console.log("Invoke SendColorToClients, color data:", data)
-        await connection.invoke("SendColorToClients", data)
+        try 
+        {
+            if (!VerifyMessage(data) || !data.color) return Logger.error(Msg("Can't invoke SendColorToClients with invalid data"), Debug(data))
+
+            Logger.log(Msg("Invoke SendColorToClients, color data:"), Debug(data))
+            await CurrentConnection.invoke("SendColorToClients", data)
+        } 
+        catch (err) 
+        {
+            Logger.error(Msg(err))
+            return err
+        }
     }
 
     /** Get state of a sent guess */
-    export async function getGuessState(id:number): Promise<GuessState>
+    export async function GetGuessState(id:number): Promise<GuessState>
     {
-        console.log("Invoke GetGuessState, id:", id)
-        return await connection.invoke("GetGuessState", id)
+        try 
+        {
+            if (id <= 0) return Logger.error(Msg("Can't invoke GetGuessState with invalid id"), Debug(id))
+
+            Logger.log(Msg("Invoke GetGuessState, id:"), Debug(id))
+            return await CurrentConnection.invoke("GetGuessState", id)
+        } 
+        catch (err) 
+        {
+            Logger.error(Msg(err))
+            return Enum.GuessState.UndefinedError;
+        }
     }
     
     /** Get map id for the current connection */
-    export async function getMapId(channelName:string): Promise<string>
+    export async function GetMapID(channelName:string): Promise<string>
     {
-        console.log("Invoke GetMapId, channelName:", channelName)
-        return await connection.invoke("GetMapId", channelName)
+        try 
+        {
+            if (!channelName) return Logger.error(Msg("Can't invoke GetMapId with invalid channelName"))
+
+            Logger.log(Msg("Invoke GetMapId, channelName:"), Debug(channelName))
+            return await CurrentConnection.invoke("GetMapId", channelName)
+        } 
+        catch (err) 
+        {
+            Logger.error(Msg(err))
+            return ""
+        }
+    }
+
+    function VerifyMessage(data: UserData)
+    {
+        return data && data.bot && data.hlx && data.tkn && data.src && data.sourcePlatform;
     }
 }
 

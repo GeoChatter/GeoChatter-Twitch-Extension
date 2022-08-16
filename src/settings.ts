@@ -1,76 +1,70 @@
-/// <reference path="types.d.ts" />
+/** App settings */
 export namespace Setting {
-  var refresh = () => {
-    // TODO
-    console.log("Refresh recieved")
-  };
-  
-  export var MapId: Nullable<string> = ""
-  
-  export var General = {
-    _3d: true,
-    sens: 100,
-    ex: 1,
-    globe: false,
-    copyAndPaste: false,
-    drawerOpen: false,
-    globeView: true,
-    testing: false,
-  } as GeneralSettings
 
-  export var Streamer: StreamerSettings = {
-    borders: false,
-    borderAdmin: false,
-    flags: false,
-    streamOverlay: false,
-    temporaryGuesses: false,
-    streamer: undefined
-  }
+    /** Refresh event handler */
+    export var OnRefresh: Nullable<(key: keyof typeof Streamer) => void> = null
 
-  export function changeStreamerSettings(key: keyof typeof Streamer, newVal: ValueOf<typeof Streamer>) {
-    Streamer[key] = newVal
-    refresh()
-  }
+    /** Refresh the app depending on setting changes */
+    export function FireOnRefresh(key: keyof typeof Streamer)
+    {
+        if (!key) return;
 
-  export function getvalues(): any {
-    const values = structuredClone(General)
+        Logger.debug(Debug("Refresh received"))
 
-    for (const key of Object.keys(Streamer)) {
-      if (Streamer[key] === false) {
-        values[key] = Streamer[key]
-      }
+        if (OnRefresh) OnRefresh(key);
+        else Logger.warn(Msg(`OnRefresh isn't set! No action for key: ${key}`))
+    };
+
+    /** Unique map id streamer GeoChatter client is hosting */
+    export var MapId: Nullable<string> = ""
+
+    /** Streamer map settings */
+    export var Streamer: StreamerSettings = {
+        gameMode: null,
+        installedFlagPacks: {},
+        borderAdmin: false,
+        isUSStreak: false,
+        mapIdentifier: "",
+        showBorders: false,
+        showFlags: false,
+        showStreamOverlay: false,
+        streamer: "",
+        temporaryGuesses: false
     }
-    return values
-  }
 
-  export function initialize() {
-    load()
-    console.log(General)
-  }
-
-  export function load() {
-    let loadedObj = JSON.parse(localStorage.getItem("settings") ?? "{}") ?? {}
-    for (const key of Object.keys(loadedObj)) {
-      General[key] = loadedObj[key]
+    /** Reload given key */
+    export function ForceReload(key: keyof StreamerSettings)
+    {
+        FireOnRefresh(key)
     }
-  }
 
-  export function save() {
-      localStorage.setItem("settings", JSON.stringify(getvalues()))
-  }
-
-  export function change(key: keyof typeof General, newVal: ValueOf<typeof General>) {
-    if (typeof General[key] !== undefined && Object.keys(General).indexOf(key.toString()) >= 0) {
-      General[key] = newVal
-      save()
-      refresh()
+    /** Change settings */
+    export function ChangeStreamerSettings(key: keyof StreamerSettings, newVal: ValueOf<StreamerSettings>) 
+    {
+        try
+        {
+            var oldVal = Streamer[key];
+            if (key == "installedFlagPacks")
+            {
+                if (!newVal) return;
+    
+                Streamer[key] = JSON.parse(newVal)
+            }
+            else
+            {
+                Streamer[key] = newVal
+            }
+    
+            if (oldVal != Streamer[key])
+            {
+                FireOnRefresh(key)
+            }
+        }
+        catch(e)
+        {
+            Logger.error(Msg(e))
+        }
     }
-    else {
-      console.log(
-        "key not found"
-      )
-    }
-  }
 }
 
 window.Setting = Setting;
