@@ -14,6 +14,8 @@ declare global
     export type LOGLEVEL = Enum.LOGLEVEL
     /** Main global logger */
     export var Logger: LoggerConsole;
+    /** Connection error state */
+    export type CONNECTIONSTART_STATE = Enum.CONNECTIONSTART_STATE
     /** Debug/info line */
     export var DebugLine: Nullable<HTMLElement>;
     /** Set message to debug line in the bottom */

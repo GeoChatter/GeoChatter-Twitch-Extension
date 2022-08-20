@@ -9,6 +9,12 @@ export namespace Control
     export var ColorPicker: Nullable<HTMLElement>;
     /** Flag change button */
     export var FlagBtn: Nullable<HTMLElement>;
+    /** Reload button */
+    export var FlagDropdown: Nullable<HTMLElement>;
+    /** Layers button */
+    export var LayersBtn: Nullable<HTMLElement>;
+    /** Layers dropdown */
+    export var LayersDropdown: Nullable<HTMLElement>;
     /** Settings button */
     export var SettingBtn: Nullable<HTMLElement>;
     /** Settings window */

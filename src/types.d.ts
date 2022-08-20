@@ -133,7 +133,7 @@ declare export global
     export type UserData = {
         /** Map ID */
         bot: string;
-        /** Helix token */
+        /** UNUSED: Helix token */
         hlx: string;
         /** Token */
         tkn: string;
@@ -174,5 +174,4 @@ declare export global
         /** HEX color */
         color: string;
     } & UserData
-
 }

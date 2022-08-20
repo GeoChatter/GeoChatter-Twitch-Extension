@@ -8,8 +8,7 @@ import { Setting } from "./settings";
 import { Util } from "./utils";
 
 /** Application main namespace */
-export namespace App
-{
+export namespace App {
     /** Main invoke date */
     export var Invoked: Nullable<Date>;
     /** EndInitialize date */
@@ -31,8 +30,8 @@ export namespace App
     /** Currently displayed marker */
     export var CurrentMarker: Nullable<L.Marker>;
     /** Last click coordinates */
-    export var CurrentGuess: Coordinates = {lat: 0, lng: 0};
-    
+    export var CurrentGuess: Coordinates = { lat: 0, lng: 0 };
+
     /** Last error type */
     export var LastError: Enum.FAIL_NAME = Enum.FAIL_NAME.NONE;
 
@@ -40,7 +39,7 @@ export namespace App
     export var BorderFeatures: GCFeatureCollection[] = [];
     /** Borders cache */
     var BorderFeaturesCache: GCFeatureCollection[] = [];
-    
+
     /** Flags */
     export var Flags: SVGDictionary = {};
     /** Flags cache */
@@ -57,16 +56,16 @@ export namespace App
 
     /** Currently displayed geojson flag SVG */
     export var CurrentFeatureFlag: Nullable<string>;
-    
+
     /** GeoJSON styling options */
-    export var GeoJSONStyle: L.GeoJSONOptions = { 
-        style: { 
-            fillOpacity: 0.1 
-        } 
+    export var GeoJSONStyle: L.GeoJSONOptions = {
+        style: {
+            fillOpacity: 0.1
+        }
     };
 
     /** Available layers */
-    export const Layers = 
+    export const Layers =
     {
         [Enum.LAYER.STREETS]: L.tileLayer(Constant.DEFAULT_LAYER + Constant.ACCESS_TOKEN, {
             attribution: Constant.ATTRIBUTIONS,
@@ -75,7 +74,7 @@ export namespace App
             tileSize: 512,
             zoomOffset: -1
         }),
-        [Enum.LAYER.SATELLITE]: L.tileLayer(Constant.DEFAULT_SAT_LAYER + Constant.ACCESS_TOKEN,{
+        [Enum.LAYER.SATELLITE]: L.tileLayer(Constant.DEFAULT_SAT_LAYER + Constant.ACCESS_TOKEN, {
             attribution: Constant.ATTRIBUTIONS,
             maxZoom: Constant.MAX_ZOOM,
             minZoom: Constant.MIN_ZOOM,
@@ -115,9 +114,9 @@ export namespace App
     /** Marker icon class extended */
     export var LeafIcon = L.Icon.extend({
         options: {
-            iconSize:     [32, 32],
-            iconAnchor:   [18, 18],
-            popupAnchor:  [18, 18]
+            iconSize: [32, 32],
+            iconAnchor: [18, 18],
+            popupAnchor: [18, 18]
         }
     }) as unknown as any;
 
@@ -135,11 +134,9 @@ export namespace App
     const VERSION = "v100";
 
     /** Handle twitch configuration */
-    function handleConfiguration()
-    {
+    function handleConfiguration() {
         if (TwitchExt.configuration.broadcaster) {
-            try 
-            {
+            try {
                 if (TwitchExt.configuration.broadcaster.version != VERSION) return Logger.error(Msg("Streamer configuration is not set!"));
 
                 var config = JSON.parse(TwitchExt.configuration.broadcaster.content) as BroadcasterConfig;
@@ -148,13 +145,11 @@ export namespace App
 
                 StreamerGeoGuessrID = config.GGUserID
 
-                if(!StreamerGeoGuessrID)
-                {
+                if (!StreamerGeoGuessrID) {
                     Logger.error(Msg("Streamer GeoGuessr ID is invalid!"))
                 }
-            } 
-            catch (e)
-            {
+            }
+            catch (e) {
                 Logger.warn(Msg(e))
             }
         }
@@ -164,8 +159,7 @@ export namespace App
     export var LastContext = {} as Twitch.ext.Context;
 
     /** Context handler */
-    function handleContext(e: Twitch.ext.Context | any)
-    {
+    function handleContext(e: Twitch.ext.Context | any) {
         LastContext = e;
     }
 
@@ -173,8 +167,7 @@ export namespace App
     export var WasAuthHandlerInvoked: boolean = false;
 
     /** Handle twitch authorization */
-    async function handleAuthorized(e: Twitch.ext.Authorized)
-    {
+    async function handleAuthorized(e: Twitch.ext.Authorized) {
         Logger.debug(Msg("Authorization event"), Debug(e));
 
         AuthData = {
@@ -187,13 +180,8 @@ export namespace App
         await collectHelix();
 
         WasAuthHandlerInvoked = true;
-        
-        await BeginInitialize()
-            .catch(err => {
-                Logger.error(Msg(err));
-            });
-            
-        await EndInitialize()
+
+        await Initialize();
     }
 
     /** Handle keydown for sending guesses via spacebar */
@@ -203,15 +191,18 @@ export namespace App
     // }
 
     /** Random guess button click */
-    function handleRandomGuess()
-    {
+    function handleRandomGuess() {
         nextGuessRand = true
         handleSendGuess();
     }
 
     /** Handle extension reload */
-    async function handleReload()
-    {
+    async function handleReload() {
+
+        if (Control.SettingCard) Control.SettingCard.style.display = "none";
+
+        if (!WasAuthHandlerInvoked) return
+
         removeEventListeners();
 
         await Connection.StopConnection();
@@ -221,54 +212,52 @@ export namespace App
         Flags = {}
 
         ISO = []
-        
+
         Invoked = null;
-    
+
         Initialized = null;
-    
+
         IsInitialized = false;
-    
+
         CanSendGuess = false;
-    
+
         IsMobile = false;
 
         CurrentLayer = Enum.LAYER.STREETS;
-    
+
         CurrentPopup = null;
-    
+
         CurrentMarker = null;
-    
-        CurrentGuess = {lat: 0, lng: 0};
+
+        CurrentGuess = { lat: 0, lng: 0 };
         nextGuessRand = false;
         nextGuessTemp = false;
 
         LastError = Enum.FAIL_NAME.NONE;
 
-        Main()
-            .then(() => {
-                Setting.ForceReload("showBorders");
-                Setting.ForceReload("showFlags");
-                Setting.ForceReload("temporaryGuesses")
-            });
+        await Initialize();
+
+        Setting.ForceReload("showBorders");
+        Setting.ForceReload("showFlags");
+        Setting.ForceReload("temporaryGuesses");
     }
 
     /** Handle send guess button click */
-    function handleSendGuess(){
+    function handleSendGuess() {
         let temp = nextGuessTemp;
         let rand = nextGuessRand;
 
         nextGuessTemp = false;
         nextGuessRand = false;
 
-        if ((LastError != Enum.FAIL_NAME.NONE) 
-        || !IsInitialized 
-        || !CanSendGuess 
-        || !Control.SendGuessBtn) return;
+        if ((LastError != Enum.FAIL_NAME.NONE)
+            || !IsInitialized
+            || !CanSendGuess
+            || !Control.SendGuessBtn) return;
 
         if (!temp) guessButtonState(false);
 
-        if (!TwitchExt.viewer.isLinked) 
-        {
+        if (!TwitchExt.viewer.isLinked) {
             Control.SendGuessBtn.textContent = "Can't guess without granting access!"
                 + (IsMobile ? "Open extension settings and grant access!" : "Reload the page to get the access prompt.");
 
@@ -277,14 +266,14 @@ export namespace App
             return;
         }
 
-        var send: GuessData = 
+        var send: GuessData =
         {
             bot: `${Setting.MapId}`,
+            hlx: "",
             lat: `${CurrentGuess.lat}`,
             lng: `${CurrentGuess.lng}`,
-            hlx: `${(AuthData.helixToken ? AuthData.helixToken : "")}`,
             tkn: `${AuthData.token}`,
-            id: `${User.id ? User.id : TwitchExt.viewer.id}`,
+            id: `${User.id}`,
             name: `${User.login}`,
             display: `${User.display_name}`,
             pic: `${User.profile_image_url}`,
@@ -299,40 +288,35 @@ export namespace App
 
     /** Handle click on map instance */
     export function handleMapClick(e: L.LeafletMouseEvent) {
-        if(CurrentPopup == null) return;
+        if (CurrentPopup == null) return;
 
         CurrentGuess.lat = e.latlng.lat;
         CurrentGuess.lng = e.latlng.lng;
 
         CurrentMarker?.setLatLng(e.latlng);
 
-        if (LastError != Enum.FAIL_NAME.NONE)
-        {
+        if (LastError != Enum.FAIL_NAME.NONE) {
             CurrentPopup
                 .setLatLng(e.latlng)
-                .setContent(`<p style="font-weight:bold;text-align:center; margin:0 !important;">${FAIL_MESSAGE[LastError]}</p>`) 
-                
+                .setContent(`<p style="font-weight:bold;text-align:center; margin:0 !important;">${FAIL_MESSAGE[LastError]}</p>`)
+
             CurrentMarker?.openPopup()
 
             if (Control.SendGuessBtn) Control.SendGuessBtn.textContent = FAIL_MESSAGE[LastError];
         }
-        else
-        {
-            if (CurrentMarker != null)
-            {
+        else {
+            if (CurrentMarker != null) {
                 CurrentMarker?.closePopup()
             }
-            else
-            {
-                Map.closePopup(CurrentPopup);        
+            else {
+                Map.closePopup(CurrentPopup);
                 CurrentPopup
                     .setLatLng(e.latlng)
                     .setContent(`<p style="font-weight:bold;text-align:center; margin:0 !important;">Press the button to make a guess</p>`)
                     .openOn(Map);
             }
-            
-            if (Setting.Streamer.temporaryGuesses && Control.TempCB?.checked)
-            {
+
+            if (Setting.Streamer.temporaryGuesses && Control.TempCB?.checked) {
                 nextGuessTemp = true;
                 handleSendGuess();
             }
@@ -342,8 +326,7 @@ export namespace App
     }
 
     /** Display polygons on map click */
-    async function setPolygonsAfterMapClick()
-    {
+    async function setPolygonsAfterMapClick() {
         const [country, svg, countryNameResponse] = await Util.GetCountry(Flags,
             BorderFeatures,
             ISO,
@@ -351,12 +334,10 @@ export namespace App
             CurrentGuess.lng
         );
 
-        if (country && "properties" in country)
-        {
+        if (country && "properties" in country) {
             CurrentFeatureName = country?.properties?.shapeName;
         }
-        else
-        {
+        else {
             CurrentFeatureName = countryNameResponse;
         }
 
@@ -374,59 +355,54 @@ export namespace App
     }
 
     /** Set top display for country flag and name */
-    function setFeatureDisplay()
-    {
+    function setFeatureDisplay() {
         let fcon = document.getElementById("flagContainerImage") as HTMLDivElement;
-        if (!Setting.Streamer.showFlags || !Control.FlagCB?.checked)
-        {
-            if (fcon)
-            {
+        if (!Setting.Streamer.showFlags || !Control.FlagCB?.checked) {
+            if (fcon) {
                 fcon.style.display = "none"
             }
         }
-        else if (fcon)
-        {
+        else if (fcon) {
             fcon.style.display = CurrentFeatureFlag ? "flex" : "none"
             fcon.style.background = `url('${CurrentFeatureFlag ?? ""}')`
         }
-        
+
         let fname = document.getElementById("featureName");
 
-        if (fname)
-        {
+        if (fname) {
             fname.style.display = CurrentFeatureName ? "flex" : "none"
             fname.textContent = CurrentFeatureName ?? "";
         }
     }
 
     /** Document click */
-    function handleDocumentClick(event: any)
-    {
+    function handleDocumentClick(event: any) {
         if (!Control.SettingCard) return
 
-        if (event.target.matches('#settingsBtn')) 
-        {
+        if (event.target.matches('#settingsBtn')) {
             // Ignore
         }
-        else if (!event.target.matches('#settingCard, #settingCard *')) 
-        {
+        else if (!event.target.matches('#settingCard, #settingCard *')) {
             Control.SettingCard.style.display = "none";
+        }
+
+        if (!event.target.matches('.dropbtn')) {
+            Control.FlagDropdown?.classList.remove("show");
+            Control.LayersDropdown?.classList.remove("show");
         }
     }
 
     /** Display settings window */
-    function handleSettingsClick()
-    {
+    function handleSettingsClick() {
         if (!Control.SettingCard) return
 
         if (Control.SettingCard.style.display == "flex")
             Control.SettingCard.style.display = "none";
-        else 
+        else
             Control.SettingCard.style.display = "flex";
     }
 
-    function handleLogDisplay()
-    {
+    function handleLogDisplay() {
         let t = document.getElementById("infoArea")
         if (!t) return;
 
@@ -443,12 +419,19 @@ export namespace App
         t.textContent = Messages.join("\r\n");
     }
 
+    function handleFlagBtn() {
+        if (Control.FlagDropdown) $(Control.FlagDropdown).toggleClass("show");
+    }
+
+    function handleLayersBtn() {
+        if (Control.LayersDropdown) $(Control.LayersDropdown).toggleClass("show");
+    }
+
     /** Add all event listeners to buttons and instances */
-    export function addEventListeners()
-    {
+    export function addEventListeners() {
         Setting.OnRefresh = RefreshViewBySetting;
 
-        if (!IsMobile){
+        if (!IsMobile) {
             // document.body.addEventListener("keydown", handleSpacebar)
         }
 
@@ -461,6 +444,9 @@ export namespace App
         Control.BorderCB?.addEventListener("change", () => localStorage.setItem("disableBorders", Control.BorderCB?.checked ? "0" : "1"));
         Control.TempCB?.addEventListener("change", () => localStorage.setItem("disableTempGuesses", Control.TempCB?.checked ? "0" : "1"));
 
+        Control.FlagBtn?.addEventListener("click", handleFlagBtn);
+        Control.LayersBtn?.addEventListener("click", handleLayersBtn);
+
         Control.ReloadBtn?.addEventListener("click", handleReload);
         Control.InfoBtn?.addEventListener("click", handleLogDisplay);
 
@@ -470,29 +456,31 @@ export namespace App
         Control.ColorPicker?.addEventListener("change", handleColorChange);
 
         Control.SatelliteLayerBtn?.addEventListener("click", layerChangers[Enum.LAYER.SATELLITE]);
-        
+
         Control.StreetsLayerBtn?.addEventListener("click", layerChangers[Enum.LAYER.STREETS]);
-        
+
         Map.on('click', handleMapClick);
     }
 
     /** Remove all event listeners to buttons and instances */
-    export function removeEventListeners()
-    {
+    export function removeEventListeners() {
         Setting.OnRefresh = null;
-        
-        if (!IsMobile){
+
+        if (!IsMobile) {
             // document.body.removeEventListener("keydown", handleSpacebar)
         }
 
         document.removeEventListener("click", handleDocumentClick);
-        
+
         Control.SendGuessBtn?.removeEventListener("click", handleSendGuess);
 
         Control.SettingBtn?.removeEventListener("click", handleSettingsClick);
         Control.FlagCB?.replaceWith(Control.FlagCB?.cloneNode(true));
         Control.BorderCB?.replaceWith(Control.BorderCB?.cloneNode(true));
         Control.TempCB?.replaceWith(Control.TempCB?.cloneNode(true));
+
+        Control.FlagBtn?.removeEventListener("click", handleFlagBtn);
+        Control.LayersBtn?.removeEventListener("click", handleLayersBtn);
 
         Control.ReloadBtn?.removeEventListener("click", handleReload);
         Control.InfoBtn?.removeEventListener("click", handleLogDisplay);
@@ -501,17 +489,16 @@ export namespace App
         Control.ColorPicker?.removeEventListener("change", handleColorChange)
 
         Control.SatelliteLayerBtn?.removeEventListener("click", layerChangers[Enum.LAYER.SATELLITE]);
-        
+
         Control.StreetsLayerBtn?.removeEventListener("click", layerChangers[Enum.LAYER.STREETS]);
-        
+
         Map.removeEventListener('click', handleMapClick);
     }
 
     /** Layer change callback creator */
-    function layerChangerFunction(layer: LAYER)
-    {
+    function layerChangerFunction(layer: LAYER) {
         let _layer = layer;
-        return () =>{
+        return () => {
             Map.removeLayer(Layers[CurrentLayer]);
             CurrentLayer = _layer;
             Layers[CurrentLayer].addTo(Map);
@@ -525,20 +512,17 @@ export namespace App
     }
 
     /** Enable/Disable send guess button */
-    export function guessButtonState(state = false)
-    {
+    export function guessButtonState(state = false) {
         if (!Control.SendGuessBtn || !Control.RandomBtn) return;
 
-        if(state)
-        {
+        if (state) {
             CanSendGuess = true;
             Control.SendGuessBtn.style.backgroundColor = "#19770be3";
             Control.SendGuessBtn.style.cursor = "pointer";
             Control.RandomBtn.style.display = "block";
             LastError = Enum.FAIL_NAME.NONE
         }
-        else
-        {
+        else {
             CanSendGuess = false;
             Control.SendGuessBtn.style.backgroundColor = "#6b6b6bd6";
             Control.SendGuessBtn.style.cursor = "default";
@@ -557,45 +541,41 @@ export namespace App
 
     /** Get user data from Helix API */
     export async function collectHelix() {
-        
+
         var id = TwitchExt.viewer.id ?? AuthData.userId;
-        var hlx = TwitchExt.viewer.helixToken ?? AuthData.helixToken;
+        var hlx = AuthData.helixToken ?? TwitchExt.viewer.helixToken;
         Debug(`COLLECT HELIX: ${id}, ${hlx}`)
         if (!hlx || !id) return;
 
         helix['Authorization'] = 'Extension ' + hlx
 
         let r = await fetch(
-                'https://api.twitch.tv/helix/users/?id=' + id,
-                {
-                    method: 'GET',
-                    headers: helix,
-                }
-            )
+            'https://api.twitch.tv/helix/users/?id=' + id,
+            {
+                method: 'GET',
+                headers: helix,
+            }
+        )
             .catch(err => {
                 Logger.error(Msg(err));
                 return null;
             })
-            
-        if (r && r.status == 200)
-        {
+
+        if (r && r.status == 200) {
             let js = await r.json()
             Debug("collectHelix response json")
             Debug(js)
             User = js.data[0];
         }
-        else
-        {
+        else {
             Debug("collectHelix response status")
             Debug(r?.status)
         }
     }
 
     /** Set error by type and display on screen */
-    export function setError(name: FAIL_NAME, message?: string)
-    {
-        if (message && message.indexOf && message.indexOf("<!DOCTYPE html>") >= 0) 
-        {
+    export function setError(name: FAIL_NAME, message?: string) {
+        if (message && message.indexOf && message.indexOf("<!DOCTYPE html>") >= 0) {
             fatalError("Something went wrong. Try reloading the page.")
             Debug("Error message HTML base64: " + btoa(message));
             return;
@@ -610,37 +590,31 @@ export namespace App
     }
 
     /** Send guess via wss */
-    function sendGuess(data: GuessData, wasTemp: boolean)
-    {
+    function sendGuess(data: GuessData, wasTemp: boolean) {
         if (LastError != Enum.FAIL_NAME.NONE) return
 
-        if (data && data.isTemporary)
-        {
+        if (data && data.isTemporary) {
             Logger.info(Msg(`Sent a temporary guess...`))
         }
-        else
-        {
+        else {
             Logger.info(Msg("Sent a guess, waiting for confirmation..."))
         }
 
         Connection.SendGuess(data)
-            .then(res =>
-            {
-                Logger.log(Msg(res));
-                if (res[1] < 0)
-                {
+            .then(res => {
+                Logger.log(Debug(res));
+                if (res[1] < 0) {
                     Logger.info(Msg("Failed to send the guess"))
                     setError(Enum.FAIL_NAME.SERVER_OFFLINE)
                 }
-                else if(!wasTemp){
+                else if (!wasTemp) {
                     watchAndReportGuessState(res[1])
                 }
             })
             .catch(() => setError(Enum.FAIL_NAME.INTERNAL))
     }
 
-    function fatalError(text: string, killconnection = true)
-    {
+    function fatalError(text: string, killconnection = true) {
         Logger.error("Fatal Error", Debug(text));
         setError(Enum.FAIL_NAME.INTERNAL, Msg(text));
 
@@ -648,10 +622,8 @@ export namespace App
     }
 
     /** Determine what to do upon received guess state, return wheter to exit guess state checker */
-    function determineGuessStatus(status: GuessState): boolean
-    {
-        switch (status)
-        {
+    function determineGuessStatus(status: GuessState): boolean {
+        switch (status) {
             case Enum.GuessState.Submitted:
                 {
                     setError(Enum.FAIL_NAME.NONE, Msg("Waiting for guess confirmation..."));
@@ -734,21 +706,18 @@ export namespace App
         return true;
     }
 
-    function handleGuessFailedToRegister()
-    {
+    function handleGuessFailedToRegister() {
         setError(Enum.FAIL_NAME.INTERNAL, "Check the stream to confirm your guess and try again.");
         setTimeout(enableGuessButton, 5000);
     }
 
-    async function watchAndReportGuessState(guessid: number)
-    {
+    async function watchAndReportGuessState(guessid: number) {
         const interval = 500;
         const tries = 6;
         var i = 0;
         var status = Enum.GuessState.Submitted;
 
-        while (i++ < tries)
-        {
+        while (i++ < tries) {
             await new Promise((res) => setTimeout(res, interval));
             status = await Connection.GetGuessState(guessid)
             Logger.log(Msg(`Guess(${guessid}) status: ${status}`));
@@ -759,8 +728,7 @@ export namespace App
     }
 
     /** Enable guess button */
-    export function enableGuessButton()
-    {
+    export function enableGuessButton() {
         if (!Control.SendGuessBtn) return
 
         Control.SendGuessBtn.textContent = `Guess`;
@@ -768,8 +736,7 @@ export namespace App
     }
 
     /** Cache user data locally */
-    function handleLocalStorage()
-    {
+    function handleLocalStorage() {
         if (!User.profile_image_url) User.profile_image_url = localStorage.getItem("user_profile_image_url") ?? "";
         if (!User.id) User.id = localStorage.getItem("user_id") ?? "";
         if (!User.login) User.login = localStorage.getItem("user_login") ?? "";
@@ -781,20 +748,19 @@ export namespace App
         if (User.display_name) localStorage.setItem("user_display_name", User.display_name);
     }
 
-    function handleColorChange()
-    {
+    function handleColorChange() {
         if (!Control.ColorPicker) return;
 
         var color = $(Control.ColorPicker).val() as string
 
         if (!color) return;
 
-        var send: ColorData = 
+        var send: ColorData =
         {
             bot: `${Setting.MapId}`,
-            hlx: `${(AuthData.helixToken ? AuthData.helixToken : "")}`,
+            hlx: "",
             tkn: `${AuthData.token}`,
-            id: `${User.id ? User.id : TwitchExt.viewer.id}`,
+            id: `${User.id}`,
             name: `${User.login}`,
             display: `${User.display_name}`,
             pic: `${User.profile_image_url}`,
@@ -803,15 +769,16 @@ export namespace App
             color: color
         };
 
-        Logger.info(Msg(`Set username color to: ${color}`))
+        if (checkAndSetTimeoutForMessage("Color")) {
+            Logger.info(Msg(`Set username color to: ${color}`))
 
-        Connection.SendColor(send);
+            Connection.SendColor(send);
+        }
     }
 
     var colorPickerTimerId: Nullable<number>;
 
-    function handleColorPickerInput()
-    {
+    function handleColorPickerInput() {
         if (!Control.ColorPicker) return;
 
         let cp = $(Control.ColorPicker);
@@ -819,8 +786,7 @@ export namespace App
             clearTimeout(colorPickerTimerId);
         }
         colorPickerTimerId = setTimeout(function () {
-            if (Control.ColorBtn)
-            {
+            if (Control.ColorBtn) {
                 let el = $(Control.ColorBtn);
                 let clr = cp.val() as string;
 
@@ -829,27 +795,31 @@ export namespace App
                 let mstyler = document.querySelector(':root') as HTMLStyleElement;
                 mstyler?.style.setProperty('--usermarkerborder', clr);
 
-                if (Color.ShouldUseDark(clr))
-                {
+                if (Color.ShouldUseDark(clr)) {
                     if (!el.hasClass("colorBtn-dark")) el.addClass("colorBtn-dark")
                 }
-                else
-                {
+                else {
                     el.removeClass("colorBtn-dark");
                 }
             }
         }, 50);
     }
+
+    // TODO: Show modal to ask for reload on connection failure
+    // TODO: Dont load flags on mobile until button click or make async
+    // TODO: Remove marker on send guess success
     
     /** Set button and control instances */
-    function setControls()
-    {
+    function setControls() {
         Control.SatelliteLayerBtn = document.getElementById("inputSate");
         Control.StreetsLayerBtn = document.getElementById("inputStMp");
-        
+
         Control.ColorBtn = document.getElementById("colorBtn");
         Control.ColorPicker = document.getElementById("colorPicker");
         Control.FlagBtn = document.getElementById("flagsBtn");
+        Control.FlagDropdown = document.getElementById("flagDropdown");
+        Control.LayersBtn = document.getElementById("layersBtn");
+        Control.LayersDropdown = document.getElementById("layers");
 
         Control.SettingBtn = document.getElementById("settingsBtn");
         Control.SettingCard = document.getElementById("settingCard");
@@ -870,31 +840,29 @@ export namespace App
     }
 
     /** Set the map instance */
-    function setMap()
-    {
+    function setMap() {
         Map?.remove();
 
-        Map = L.map('map', 
-        {
-            tap: false,
-            fadeAnimation: true
-        });
+        Map = L.map('map',
+            {
+                tap: false,
+                fadeAnimation: true
+            });
 
         Map.setView([0, 0], Constant.MIN_ZOOM);
         Map.attributionControl.addAttribution(Constant.ATTRIBUTIONS);
 
         Layers[CurrentLayer].addTo(Map);
     }
-    
+
     /** Marker click handle */
-    function handleMarkerClick(event: any)
-    {
+    function handleMarkerClick(event: any) {
         event.target.closePopup()
+        handleMapClick(event);
     }
 
     /** Finalize main initializing */
-    async function EndInitialize()
-    {
+    async function EndInitialize() {
         CurrentPopup = L.popup(
             {
                 closeOnClick: true,
@@ -904,44 +872,39 @@ export namespace App
             .setContent('<b>Click somewhere and click "Guess" to make your guess!</b>');
 
         await collectHelix();
-            
-        if (!TwitchExt.viewer.isLinked)
-        {
+
+        if (!TwitchExt.viewer.isLinked) {
             TwitchExt.actions.requestIdShare();
             await collectHelix();
         }
 
         handleLocalStorage();
 
-        if (User.profile_image_url)
-        {
+        if (User.profile_image_url) {
             var avatar = new LeafIcon({
                 iconUrl: User.profile_image_url,
             })
-            CurrentMarker = new L.Marker([0, 0],{icon:avatar}).addTo(Map);
-            
+            CurrentMarker = new L.Marker([0, 0], { icon: avatar, bubblingMouseEvents: true }).addTo(Map);
+
             CurrentPopup.options.offset = [-18, -18]
             CurrentMarker
                 .bindPopup(CurrentPopup)
                 .on('click', handleMarkerClick);
 
-            setTimeout(() => 
-            {
+            setTimeout(() => {
                 CurrentMarker?.openPopup();
             }, 750);
         }
-        else
-        {
+        else {
             CurrentPopup
-                .setLatLng({lat:0,lng:0})
+                .setLatLng({ lat: 0, lng: 0 })
                 .addTo(Map)
                 .on('click', handleMarkerClick);
         }
 
         IsInitialized = true;
 
-        if (!StreamerGeoGuessrID)
-        {
+        if (!StreamerGeoGuessrID) {
             let m = "Streamer configuration is missing their GeoGuessr ID!";
             setError(Enum.FAIL_NAME.NONE, m);
             Logger.error(Msg(m));
@@ -951,46 +914,41 @@ export namespace App
         let res = await Connection.StartConnection(StreamerGeoGuessrID)
             .catch(err => {
                 Logger.error(Msg(err));
-                return err;
+                return {
+                    msg: (err as string)?.toString(),
+                    state: Enum.CONNECTIONSTART_STATE.ERROR
+                };
             })
-           
-        if (!res && res != undefined)
-        {
+
+        if (res.state == Enum.CONNECTIONSTART_STATE.STARTED) {
             Logger.info(Msg("Established connection, finalizing initializer."), Debug(res))
             enableGuessButton();
             Initialized = new Date();
         }
-        else
-        {
-            setError(Enum.FAIL_NAME.NONE, res);
+        else if (res.state == Enum.CONNECTIONSTART_STATE.ERROR) {
+            setError(Enum.FAIL_NAME.NONE, res.msg);
             Logger.error(Msg(res));
             await Connection.StopConnection();
         }
     }
 
     /** Refresh the overlays and the view by streamer settings changing */
-    async function RefreshViewBySetting(key: keyof typeof Setting.Streamer)
-    {
-        switch (key)
-        {
+    async function RefreshViewBySetting(key: keyof typeof Setting.Streamer) {
+        switch (key) {
             case "showBorders":
                 {
-                    if (Setting.Streamer.showBorders)
-                    {
-                        if (BorderFeatures.length == 0)
-                        {
-                            if (BorderFeaturesCache.length == 0)
-                            {
+                    if (Setting.Streamer.showBorders) {
+                        if (BorderFeatures.length == 0) {
+                            if (BorderFeaturesCache.length == 0) {
                                 BorderFeatures = await Util.GetFeatures()
+                                if (BorderFeatures.length > 0) BorderFeaturesCache = BorderFeatures;
                             }
-                            else
-                            {
+                            else {
                                 BorderFeatures = BorderFeaturesCache
                             }
                         }
                     }
-                    else
-                    {
+                    else {
                         if (BorderFeatures.length > 0) BorderFeaturesCache = BorderFeatures;
                         BorderFeatures = [];
                     }
@@ -999,25 +957,26 @@ export namespace App
                 }
             case "showFlags":
                 {
-                    if (Setting.Streamer.showFlags)
-                    {
-                        if (Object.entries(Flags).length == 0)
-                        {
-                            if (Object.entries(FlagsCache).length == 0)
-                            {
+                    if (Control.FlagDropdown) $(Control.FlagDropdown).empty()
+
+                    if (Setting.Streamer.showFlags) {
+                        if (Object.entries(Flags).length == 0) {
+                            if (Object.entries(FlagsCache).length == 0) {
                                 Flags = await Util.GetFlags()
+                                if (Object.entries(Flags).length >= 0) FlagsCache = Flags;
                             }
-                            else
-                            {
+                            else {
                                 Flags = FlagsCache
                             }
                         }
                     }
-                    else
-                    {
+                    else {
                         if (Object.entries(Flags).length >= 0) FlagsCache = Flags;
                         Flags = {};
                     }
+
+                    setFlagsDropdown();
+
                     Logger.info(Msg(`New streamer setting: Flags are ${(Setting.Streamer.showFlags ? "enabled" : "disabled")}`))
                     break;
                 }
@@ -1029,50 +988,141 @@ export namespace App
         }
     }
 
-    /** Begin initializing process */
-    async function BeginInitialize()
-    {
-        try
+    var settingFlags = false;
+
+    async function setFlagsDropdown() {
+        try {
+            let svgshow = Setting.Streamer.showFlags;
+
+            while (settingFlags) {
+                await new Promise((res) => setTimeout(res, 500));
+            }
+            settingFlags = true;
+
+            if (Control.FlagDropdown) {
+                let anc = $("<a>");
+                anc
+                    .append($("<div>"))
+                    .append($("<span>").text("Random Flag"))
+                    .data("flagcode", "random");
+                Control.FlagDropdown.appendChild(anc[0] as HTMLElement)
+
+                anc.on("click", handleFlagSelect)
+                for (let [code, svg] of Object.entries(FlagsCache)) {
+                    if (!code || !svg) continue
+
+                    let anc = $("<a>");
+                    anc
+                        .append($("<div>").css("background", `${svgshow ? `url('${svg}')` : ""}`))
+                        .append($("<span>").text(code))
+                        .data("flagcode", code);
+                    Control.FlagDropdown.appendChild(anc[0] as HTMLElement)
+
+                    anc.on("click", handleFlagSelect)
+                }
+            }
+        }
+        catch (e) {
+            Logger.error(Debug("Failed to set flags dropdown"), Debug(e));
+        }
+        finally {
+            settingFlags = false;
+        }
+    }
+    var CommandTimeouts = {
+        Color: {
+            isCurrentlyAllowed: true,
+            timeout: 5000
+        },
+        Flag: {
+            isCurrentlyAllowed: true,
+            timeout: 5000
+        }
+    }
+
+    function checkAndSetTimeoutForMessage(cmd: keyof typeof CommandTimeouts): boolean {
+        if (!CommandTimeouts[cmd].isCurrentlyAllowed) return false;
+
+        CommandTimeouts[cmd].isCurrentlyAllowed = false;
+        setTimeout(() => CommandTimeouts[cmd].isCurrentlyAllowed = true, CommandTimeouts.Flag.timeout)
+        return true;
+    }
+
+    function handleFlagSelect(ev: JQuery.ClickEvent) {
+        var flag = $(ev.currentTarget).data("flagcode") as string
+
+        if (!flag) return;
+
+        var send: FlagData =
         {
+            bot: `${Setting.MapId}`,
+            hlx: "",
+            tkn: `${AuthData.token}`,
+            id: `${User.id}`,
+            name: `${User.login}`,
+            display: `${User.display_name}`,
+            pic: `${User.profile_image_url}`,
+            sourcePlatform: "Twitch",
+            src: "extension",
+            flag: flag
+        };
+
+        handleFlagBtn();
+
+        if (checkAndSetTimeoutForMessage("Flag")) {
+            Logger.info(Msg(`Set flag to: ${flag}`))
+
+            Connection.SendFlag(send);
+        }
+    }
+
+    async function Initialize() {
+        await BeginInitialize()
+            .catch(err => {
+                Logger.error(Msg(err));
+            });
+
+        await EndInitialize()
+    }
+
+    /** Begin initializing process */
+    async function BeginInitialize() {
+        try {
             ISO = await Util.GetISOData()
-    
+
             setControls();
-    
+
             guessButtonState(false);
-    
+
             setMap();
-    
+
             addEventListeners();
 
-            while (!WasAuthHandlerInvoked)
-            {
+            while (!WasAuthHandlerInvoked) {
                 Logger.debug("Waiting for Twitch auth handler...");
                 await new Promise((res) => setTimeout(res, 500));
             }
         }
-        catch (e)
-        {
+        catch (e) {
             Logger.error(Msg("Error, please reload the page. " + e))
         }
     }
 
     /** Main entry point */
-    export async function Main()
-    {
+    export async function Main() {
         Invoked = new Date();
         Logger.info(Msg("Main invoked"), Debug(Invoked))
 
         TwitchExt = window.Twitch.ext;
         IsMobile = new URLSearchParams(window.location.search).get('platform') == "mobile"
 
-        if (!TwitchEventListenersAdded)
-        {
+        if (!TwitchEventListenersAdded) {
             TwitchEventListenersAdded = true;
-            
+
             TwitchExt.onAuthorized(handleAuthorized);
 
             TwitchExt.onContext(handleContext);
-            
+
             TwitchExt.configuration.onChanged(handleConfiguration);
         }
     }

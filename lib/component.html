@@ -60,12 +60,16 @@
 
             <div class="layersContainer">
                 <div id="colorBtn" data-tooltip="Pick your username color" class="dropbtn optionBtn">
-                    <input id="colorPicker" type="color" name="colorPicker" value="#0e7e09d6">
+                    <input id="colorPicker" type="color" name="colorPicker" value="#0e7e09">
                 </div>
             </div>
             <div class="layersContainer">
-                <button id="flagsBtn" data-tooltip="Pick your flag" class="dropbtn optionBtn">
-                </button>
+                <div class="dropdown">
+                    <button id="flagsBtn" data-tooltip="Pick your flag" class="dropbtn optionBtn"></button>
+                    <div id="flagDropdown" class="dropdown-content">
+                        <a><span>Loading flags...</span></a>
+                    </div>
+                </div>
             </div>
             <div class="layersContainer">
                 <button id="settingsBtn" data-tooltip="Settings" class="dropbtn"></button>

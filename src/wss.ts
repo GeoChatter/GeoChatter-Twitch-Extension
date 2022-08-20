@@ -103,7 +103,7 @@ export namespace Connection
     }
 
     /** Start the connection */
-    export async function StartConnection(botName: string): Promise<Nullable<string>>
+    export async function StartConnection(botName: string): Promise<{state: CONNECTIONSTART_STATE, msg: string}>
     {
 
         try 
@@ -129,7 +129,10 @@ export namespace Connection
 
             if (!Setting.MapId)
             {
-                return "Stopping the connection because MapId was empty";
+                return {
+                    msg: "Stopping the connection because MapId was empty",
+                    state: Enum.CONNECTIONSTART_STATE.ERROR
+                };
             }
 
             await mapLogin(Setting.MapId);
@@ -137,12 +140,18 @@ export namespace Connection
             listenToMapFeatures()
 
             listenToProblems(botName)
-            return null;
+            return {
+                msg: "",
+                state: Enum.CONNECTIONSTART_STATE.STARTED
+            };
         }
         catch (err) 
         {
             Logger.error(Msg(err))
-            return err as string;
+            return {
+                msg: (err as string)?.toString(),
+                state: Enum.CONNECTIONSTART_STATE.ERROR
+            };
         }
     }
 
@@ -154,7 +163,7 @@ export namespace Connection
             if (!VerifyMessage(guess) 
                 || !guess.lat 
                 || !guess.lng 
-                || (guess.isRandom && guess.isTemporary)) return Logger.error(Msg("Can't invoke SendGuessToClients with invalid data"), Debug(guess))
+                || (guess.isRandom && guess.isTemporary)) return Logger.error(Debug("Can't invoke SendGuessToClients with invalid data"), Debug(guess))
 
             if (CurrentConnection.state !== "Connected") 
             {
@@ -187,7 +196,7 @@ export namespace Connection
         let res: number = -1
         try 
         {
-            Logger.log(Msg("Invoke SendGuessToClients, guess data:"), Debug(guess))
+            Logger.log(Debug("Invoke SendGuessToClients, guess data:"), Debug(guess))
             res = await CurrentConnection.invoke("SendGuessToClients", guess)
         }
         catch (err) 
@@ -203,9 +212,9 @@ export namespace Connection
     {
         try 
         {
-            if (!VerifyMessage(data) || !data.flag) return Logger.error(Msg("Can't invoke SendFlagToClients with invalid data"), Debug(data))
+            if (!VerifyMessage(data) || !data.flag) return Logger.error(Debug("Can't invoke SendFlagToClients with invalid data"), Debug(data))
 
-            Logger.log(Msg("Invoke SendFlagToClients, flag data"), Debug(data))
+            Logger.log(Debug("Invoke SendFlagToClients, flag data"), Debug(data))
             await CurrentConnection.invoke("SendFlagToClients", data)
         } 
         catch (err) 
@@ -219,9 +228,9 @@ export namespace Connection
     {
         try 
         {
-            if (!VerifyMessage(data) || !data.color) return Logger.error(Msg("Can't invoke SendColorToClients with invalid data"), Debug(data))
+            if (!VerifyMessage(data) || !data.color) return Logger.error(Debug("Can't invoke SendColorToClients with invalid data"), Debug(data))
 
-            Logger.log(Msg("Invoke SendColorToClients, color data:"), Debug(data))
+            Logger.log(Debug("Invoke SendColorToClients, color data:"), Debug(data))
             await CurrentConnection.invoke("SendColorToClients", data)
         } 
         catch (err) 
@@ -236,9 +245,9 @@ export namespace Connection
     {
         try 
         {
-            if (id <= 0) return Logger.error(Msg("Can't invoke GetGuessState with invalid id"), Debug(id))
+            if (id <= 0) return Logger.error(Debug("Can't invoke GetGuessState with invalid id"), Debug(id))
 
-            Logger.log(Msg("Invoke GetGuessState, id:"), Debug(id))
+            Logger.log(Debug("Invoke GetGuessState, id:"), Debug(id))
             return await CurrentConnection.invoke("GetGuessState", id)
         } 
         catch (err) 
@@ -253,9 +262,9 @@ export namespace Connection
     {
         try 
         {
-            if (!channelName) return Logger.error(Msg("Can't invoke GetMapId with invalid channelName"))
+            if (!channelName) return Logger.error(Debug("Can't invoke GetMapId with invalid channelName"))
 
-            Logger.log(Msg("Invoke GetMapId, channelName:"), Debug(channelName))
+            Logger.log(Debug("Invoke GetMapId, channelName:"), Debug(channelName))
             return await CurrentConnection.invoke("GetMapId", channelName)
         } 
         catch (err) 
@@ -267,7 +276,7 @@ export namespace Connection
 
     function VerifyMessage(data: UserData)
     {
-        return data && data.bot && data.hlx && data.tkn && data.src && data.sourcePlatform;
+        return data && data.bot && data.tkn && data.src && data.sourcePlatform;
     }
 }
 

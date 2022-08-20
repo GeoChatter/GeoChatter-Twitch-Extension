@@ -66,6 +66,15 @@ export namespace Enum
         DEBUG = 5,
         VERBOSE = 6
     }
+    
+    /** Connection state while its starting */
+    export const enum CONNECTIONSTART_STATE
+    {
+        /** Started the connection successfully */
+        STARTED = 0,
+        /** Internal error */
+        ERROR = 1
+    }
 }
 
 window.Enum = Enum;
