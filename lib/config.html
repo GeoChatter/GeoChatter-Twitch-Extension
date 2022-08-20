@@ -7,14 +7,48 @@
     <meta name='viewport' content='width=device-width, initial-scale=1'>
     <script src="https://extension-files.twitch.tv/helper/v1/twitch-ext.min.js"></script>
 </head>
-<body>
-    <h3 style="border:2px solid black; border-radius: 8px;background-color: purple; color:white;font-weight: bold; text-align: center;">GeoChatter Configuration</h3>
+<body style="background-color: #979797de;color: black;font-size: 1.2rem;font-family: monospace;">
+    <h2 style="border:2px solid black; border-radius: 8px;background-color: purple; color:white;font-weight: bold; text-align: center;">GeoChatter Configuration</h2>
     <hr>
-    <h4 style="
-    background: white;
-    color: black;
-">Everything is configured via GeoChatter desktop client! No need to change anything here.</h4>
+    <div style="display: flex;flex-direction: column;align-items: flex-start;">
+        <div style="padding: 5px;">
+            <label for="GGUserID">GeoGuessr User ID:</label>
+            <input type="text" name="GGUserID" id="GGUserID" placeholder="Follow the steps below..." style="font-size: 1.3rem;min-width:18rem">
+        </div>
+        <div style="padding: 5px">
+            <button type="button" id="ConfigSubmit" style="cursor:pointer;font-size: medium;padding: 5px;background: purple;color: white;font-weight: bold;border-radius: 8px">
+                Save Settings
+            </button>
+        </div>
+    </div>
     <hr>
+    <div>
+        <h2>How to find your GeoGuessr ID</h2>
+        <ol>
+            <li>
+                Go to <a href="https://www.geoguessr.com/me/profile" target="_blank">your GeoGuessr profile page</a>
+            </li>
+            <li>
+                Scroll down to the bottom of the page
+            </li>
+            <li>
+                Locate <strong>SHARE PROFILE</strong> tab
+            </li>
+            <li>
+                Copy the ID at the end of the link
+                <ul>
+                    <li>Example profile link:</li>
+                    <ul> 
+                        <li style="-webkit-touch-callout: none;-webkit-user-select: none;-khtml-user-select: none;-moz-user-select: none;-ms-user-select: none;user-select: none;">https://www.geoguessr.com/user/5d700ceab4ec17ea0444e453</li>
+                    </ul>
+                    <li>The part of the link to copy and paste from the link above:</li>
+                    <ul> 
+                        <li><strong style="-webkit-touch-callout: none;-webkit-user-select: none;-khtml-user-select: none;-moz-user-select: none;-ms-user-select: none;user-select: none;">5d700ceab4ec17ea0444e453</strong></li>
+                    </ul>
+                </ul>
+            </li>
+        </ol>
+    </div>
 
     <script src='./config.js'></script>
 </body>

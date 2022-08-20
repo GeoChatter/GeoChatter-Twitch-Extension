@@ -84,9 +84,6 @@ export namespace App
         })
     };
 
-    /** Streamer channel name */
-    export var StreamerName = "";
-
     /** Helix request headers */
     export var helix = {
         'Client-ID': Constant.CLIENT_ID,
@@ -110,6 +107,8 @@ export namespace App
         userId: ""
     };
 
+    export var StreamerGeoGuessrID: Nullable<string>;
+
     /** Map instance */
     export var Map: L.Map;
 
@@ -132,14 +131,27 @@ export namespace App
         [Enum.FAIL_NAME.INTERNAL]: "Something went wrong, reload the page."
     }
 
+    /** App version to check for configuration */
+    const VERSION = "v100";
+
     /** Handle twitch configuration */
     function handleConfiguration()
     {
         if (TwitchExt.configuration.broadcaster) {
             try 
             {
-                var config = JSON.parse(TwitchExt.configuration.broadcaster.content);
-                Logger.debug(Debug(config));
+                if (TwitchExt.configuration.broadcaster.version != VERSION) return Logger.error(Msg("Streamer configuration is not set!"));
+
+                var config = JSON.parse(TwitchExt.configuration.broadcaster.content) as BroadcasterConfig;
+
+                Logger.debug(Msg("Configuration event"), Debug(config));
+
+                StreamerGeoGuessrID = config.GGUserID
+
+                if(!StreamerGeoGuessrID)
+                {
+                    Logger.error(Msg("Streamer GeoGuessr ID is invalid!"))
+                }
             } 
             catch (e)
             {
@@ -148,20 +160,22 @@ export namespace App
         }
     }
 
-    export var LastContext: any = {};
+    /** Last received context */
+    export var LastContext = {} as Twitch.ext.Context;
 
+    /** Context handler */
     function handleContext(e: Twitch.ext.Context | any)
     {
-        if (!StreamerName && e.playerChannel) StreamerName = e.playerChannel
         LastContext = e;
     }
 
+    /** Twitch auth handler invoked state */
     export var WasAuthHandlerInvoked: boolean = false;
 
     /** Handle twitch authorization */
     async function handleAuthorized(e: Twitch.ext.Authorized)
     {
-        Logger.debug(Debug(e));
+        Logger.debug(Msg("Authorization event"), Debug(e));
 
         AuthData = {
             channelId: e.channelId,
@@ -171,16 +185,22 @@ export namespace App
             userId: e.userId,
         };
         await collectHelix();
-        if (!StreamerName) StreamerName = await getChannelName()
 
         WasAuthHandlerInvoked = true;
+        
+        await BeginInitialize()
+            .catch(err => {
+                Logger.error(Msg(err));
+            });
+            
+        await EndInitialize()
     }
 
     /** Handle keydown for sending guesses via spacebar */
-    function handleSpacebar(e: KeyboardEvent)
-    {
-        if (e.code == "Space") handleSendGuess()
-    }
+    // function handleSpacebar(e: KeyboardEvent)
+    // {
+    //     if (e.code == "Space") handleSendGuess()
+    // }
 
     /** Random guess button click */
     function handleRandomGuess()
@@ -201,8 +221,6 @@ export namespace App
         Flags = {}
 
         ISO = []
-        
-        StreamerName = "";
         
         Invoked = null;
     
@@ -421,7 +439,7 @@ export namespace App
         Debug("Viewer")
         Debug(JSON.stringify(TwitchExt.viewer))
         Debug("Streamer")
-        Debug(StreamerName)
+        Debug(StreamerGeoGuessrID)
         t.textContent = Messages.join("\r\n");
     }
 
@@ -431,20 +449,9 @@ export namespace App
         Setting.OnRefresh = RefreshViewBySetting;
 
         if (!IsMobile){
-            document.body.addEventListener("keydown", handleSpacebar)
+            // document.body.addEventListener("keydown", handleSpacebar)
         }
 
-        if (!TwitchEventListenersAdded)
-        {
-            TwitchEventListenersAdded = true;
-            
-            TwitchExt.onAuthorized(handleAuthorized);
-
-            TwitchExt.onContext(handleContext);
-            
-            TwitchExt.configuration?.onChanged(handleConfiguration);
-        }
-        
         document.addEventListener("click", handleDocumentClick);
 
         Control.SendGuessBtn?.addEventListener("click", handleSendGuess);
@@ -475,7 +482,7 @@ export namespace App
         Setting.OnRefresh = null;
         
         if (!IsMobile){
-            document.body.removeEventListener("keydown", handleSpacebar)
+            // document.body.removeEventListener("keydown", handleSpacebar)
         }
 
         document.removeEventListener("click", handleDocumentClick);
@@ -549,54 +556,11 @@ export namespace App
     var nextGuessRand = false;
 
     /** Get user data from Helix API */
-    async function getChannelName() 
-    {
-        try
-        {
-            var id = AuthData.channelId;
-            var hlx = IsMobile ? AuthData.helixToken : TwitchExt.viewer.helixToken;
-            if (!hlx || !id) return;
-    
-            helix['Authorization'] = 'Extension ' + hlx
-    
-            let r = await fetch(
-                    'https://api.twitch.tv/helix/users/?id=' + id,
-                    {
-                        method: 'GET',
-                        headers: helix,
-                    }
-                )
-                .catch(err => {
-                    Logger.error(Msg(err));
-                    return null;
-                });
-
-            if (r && r.status == 200)
-            {
-                let js = await r.json()
-                Debug("getChannelName response json")
-                Debug(js)
-                return js.data[0].login
-            }
-            else
-            {
-                Debug("getChannelName response status")
-                Debug(r?.status)
-                return ""
-            }
-        }
-        catch(e)
-        {
-            Logger.error(Msg(e));
-            return ""
-        }
-    }
-
-    /** Get user data from Helix API */
     export async function collectHelix() {
         
-        var id = TwitchExt.viewer.id;
-        var hlx = IsMobile ? AuthData.helixToken : TwitchExt.viewer.helixToken;
+        var id = TwitchExt.viewer.id ?? AuthData.userId;
+        var hlx = TwitchExt.viewer.helixToken ?? AuthData.helixToken;
+        Debug(`COLLECT HELIX: ${id}, ${hlx}`)
         if (!hlx || !id) return;
 
         helix['Authorization'] = 'Extension ' + hlx
@@ -632,7 +596,8 @@ export namespace App
     {
         if (message && message.indexOf && message.indexOf("<!DOCTYPE html>") >= 0) 
         {
-            overwriteBody(message, true)
+            fatalError("Something went wrong. Try reloading the page.")
+            Debug("Error message HTML base64: " + btoa(message));
             return;
         }
 
@@ -674,14 +639,10 @@ export namespace App
             .catch(() => setError(Enum.FAIL_NAME.INTERNAL))
     }
 
-    function overwriteBody(text: string, killconnection = true)
+    function fatalError(text: string, killconnection = true)
     {
-        Logger.debug("Overwriting body", text);
-        var b = document.createElement("body")
-        b.textContent = text
-        b.style.fontSize = "1.5rem";
-        b.style.fontWeight = "bolder"
-        document.body = b;
+        Logger.error("Fatal Error", Debug(text));
+        setError(Enum.FAIL_NAME.INTERNAL, Msg(text));
 
         if (killconnection) Connection.StopConnection();
     }
@@ -698,12 +659,12 @@ export namespace App
                 }
             case Enum.GuessState.Banned:
                 {
-                    overwriteBody("You are banned by the streamer and not allowed participate in any games.");
+                    fatalError("You are banned by the streamer and not allowed participate in any games.");
                     break;
                 }
             case Enum.GuessState.BotNotFound:
                 {
-                    setError(Enum.FAIL_NAME.NONE, Msg("No game found for: " + (Setting.MapId ? Setting.MapId : StreamerName)));
+                    setError(Enum.FAIL_NAME.NONE, Msg("No game found for: " + (Setting.MapId ? Setting.MapId : StreamerGeoGuessrID)));
                     setTimeout(enableGuessButton, 3000);
                     break;
                 }
@@ -715,7 +676,7 @@ export namespace App
                 }
             case Enum.GuessState.InvalidCoordinates:
                 {
-                    overwriteBody("Invalid coordinates. Refresh the page.");
+                    fatalError("Invalid coordinates. Refresh the page.");
                     break;
                 }
             case Enum.GuessState.NoGame:
@@ -726,7 +687,7 @@ export namespace App
                 }
             case Enum.GuessState.NotFound:
                 {
-                    overwriteBody("Invalid user data. Refresh the page.");
+                    fatalError("Invalid user data. Refresh the page.");
                     break;
                 }
             case Enum.GuessState.SameCoordinates:
@@ -760,7 +721,7 @@ export namespace App
                 }
             case Enum.GuessState.Unknown:
                 {
-                    overwriteBody("Invalid guess id. Refresh the page.");
+                    fatalError("Invalid guess id. Refresh the page.");
                     break;
                 }
             default:
@@ -802,7 +763,7 @@ export namespace App
     {
         if (!Control.SendGuessBtn) return
 
-        Control.SendGuessBtn.textContent = `Send Guess to '${StreamerName}'${(IsMobile ? "" : " (SPACEBAR)")}`;
+        Control.SendGuessBtn.textContent = `Guess`;
         guessButtonState(true);
     }
 
@@ -849,11 +810,6 @@ export namespace App
 
     var colorPickerTimerId: Nullable<number>;
 
-    function getMarkerStyler(): Nullable<CSSStyleRule>
-    {
-        return (document.getElementById("markerStyler") as HTMLStyleElement)?.sheet?.cssRules[0] as CSSStyleRule;
-    }
-
     function handleColorPickerInput()
     {
         if (!Control.ColorPicker) return;
@@ -869,8 +825,9 @@ export namespace App
                 let clr = cp.val() as string;
 
                 el.css('background-color', clr);
-                let m = getMarkerStyler()
-                if (m) m.style.border = "4px solid " + clr;
+
+                let mstyler = document.querySelector(':root') as HTMLStyleElement;
+                mstyler?.style.setProperty('--usermarkerborder', clr);
 
                 if (Color.ShouldUseDark(clr))
                 {
@@ -944,7 +901,7 @@ export namespace App
                 closeButton: false,
                 zoomAnimation: true
             })
-            .setContent('<b>Click somewhere and click "Send Guess" to make your guess!</b>');
+            .setContent('<b>Click somewhere and click "Guess" to make your guess!</b>');
 
         await collectHelix();
             
@@ -981,49 +938,23 @@ export namespace App
                 .on('click', handleMarkerClick);
         }
 
-        document.getElementById("markerStyler")?.remove();
-
-        var i = document.createElement("style");
-        i.id = "markerStyler"
-        i.innerHTML = `img[src='${User.profile_image_url}']{border: 3px solid white; border-radius: 100%;}`;
-        document.head.appendChild(i);
-
-        let tries = 0;
-        while (!StreamerName && tries++ < 6)
-        {
-            Logger.warn(Msg("Awaiting streamer name from Twitch API..."));
-            await new Promise((res) => setTimeout(res, 500));
-        }
-
         IsInitialized = true;
 
-        // TODO : Deal with this stupidity for mobile...
-        if (!StreamerName)
+        if (!StreamerGeoGuessrID)
         {
-            StreamerName = await getChannelName();
-            if (!StreamerName)
-            {
-                if (IsMobile)
-                {
-                    await new Promise((res) => setTimeout(res,500));
-                    await collectHelix();
-                    StreamerName = await getChannelName();
-                    if (!StreamerName) Logger.error(Msg("Failed to connect, re-grant access."));
-                }
-                else
-                {
-                    return Logger.error(Msg("Failed to connect, reload the page."));
-                }
-            }
+            let m = "Streamer configuration is missing their GeoGuessr ID!";
+            setError(Enum.FAIL_NAME.NONE, m);
+            Logger.error(Msg(m));
+            return;
         }
 
-        let res = await Connection.StartConnection(StreamerName)
+        let res = await Connection.StartConnection(StreamerGeoGuessrID)
             .catch(err => {
                 Logger.error(Msg(err));
                 return err;
             })
            
-        if (!res)
+        if (!res && res != undefined)
         {
             Logger.info(Msg("Established connection, finalizing initializer."), Debug(res))
             enableGuessButton();
@@ -1134,11 +1065,16 @@ export namespace App
         TwitchExt = window.Twitch.ext;
         IsMobile = new URLSearchParams(window.location.search).get('platform') == "mobile"
 
-        await BeginInitialize()
-            .then(EndInitialize)
-            .catch(err => {
-                Logger.error(Msg(err));
-            });
+        if (!TwitchEventListenersAdded)
+        {
+            TwitchEventListenersAdded = true;
+            
+            TwitchExt.onAuthorized(handleAuthorized);
+
+            TwitchExt.onContext(handleContext);
+            
+            TwitchExt.configuration.onChanged(handleConfiguration);
+        }
     }
 }
 

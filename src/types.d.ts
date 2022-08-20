@@ -49,6 +49,12 @@ declare export global
         Initialize(level: Enum.LOGLEVEL.DEBUG): void
     }
 
+    /** Twitch Config Broadcaster content */
+    export type BroadcasterConfig = 
+    {
+        GGUserID: string
+    };
+    
     /** SVG dictionary */
     export type SVGDictionary = 
     { 
