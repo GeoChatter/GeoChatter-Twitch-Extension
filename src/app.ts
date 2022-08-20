@@ -299,6 +299,8 @@ export namespace App {
 
         CurrentGuess.lat = e.latlng.lat;
         CurrentGuess.lng = e.latlng.lng;
+        localStorage.setItem("LastGuessLat", CurrentGuess.lat.toPrecision(8))
+        localStorage.setItem("LastGuessLng", CurrentGuess.lng.toPrecision(8))
 
         if (!CurrentMarker?._map)
         {
@@ -905,7 +907,11 @@ export namespace App {
             var avatar = new LeafIcon({
                 iconUrl: User.profile_image_url,
             })
-            CurrentMarker = new L.Marker([0, 0], { icon: avatar, bubblingMouseEvents: true }).addTo(Map) as typeof CurrentMarker;
+
+            let lats = localStorage.getItem("LastGuessLat") ?? "0";
+            let lngs = localStorage.getItem("LastGuessLng") ?? "0";
+            
+            CurrentMarker = new L.Marker([parseFloat(lats), parseFloat(lngs)], { icon: avatar, bubblingMouseEvents: true }).addTo(Map) as typeof CurrentMarker;
 
             CurrentPopup.options.offset = [-18, -18]
 
