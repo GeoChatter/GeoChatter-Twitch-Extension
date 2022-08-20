@@ -28,7 +28,7 @@ export namespace App {
     /** Currently displayed popup */
     export var CurrentPopup: Nullable<L.Popup>;
     /** Currently displayed marker */
-    export var CurrentMarker: Nullable<L.Marker>;
+    export var CurrentMarker: Nullable<L.Marker & {_map: L.Map}>;
     /** Last click coordinates */
     export var CurrentGuess: Coordinates = { lat: 0, lng: 0 };
 
@@ -75,6 +75,13 @@ export namespace App {
             zoomOffset: -1
         }),
         [Enum.LAYER.SATELLITE]: L.tileLayer(Constant.DEFAULT_SAT_LAYER + Constant.ACCESS_TOKEN, {
+            attribution: Constant.ATTRIBUTIONS,
+            maxZoom: Constant.MAX_ZOOM,
+            minZoom: Constant.MIN_ZOOM,
+            tileSize: 512,
+            zoomOffset: -1
+        }),
+        [Enum.LAYER.SATELLITE_NOLABEL]: L.tileLayer(Constant.DEFAULT_SAT_NOLABEL_LAYER + Constant.ACCESS_TOKEN, {
             attribution: Constant.ATTRIBUTIONS,
             maxZoom: Constant.MAX_ZOOM,
             minZoom: Constant.MIN_ZOOM,
@@ -288,10 +295,16 @@ export namespace App {
 
     /** Handle click on map instance */
     export function handleMapClick(e: L.LeafletMouseEvent) {
-        if (CurrentPopup == null) return;
+        if (!CurrentMarker || !CurrentPopup) return;
 
         CurrentGuess.lat = e.latlng.lat;
         CurrentGuess.lng = e.latlng.lng;
+
+        if (!CurrentMarker?._map)
+        {
+            CurrentMarker.addTo(Map);
+            enableGuessButton()
+        }
 
         CurrentMarker?.setLatLng(e.latlng);
 
@@ -455,6 +468,8 @@ export namespace App {
         Control.ColorPicker?.addEventListener("input", handleColorPickerInput);
         Control.ColorPicker?.addEventListener("change", handleColorChange);
 
+        Control.SatelliteNoLabelLayerBtn?.addEventListener("click", layerChangers[Enum.LAYER.SATELLITE_NOLABEL]);
+
         Control.SatelliteLayerBtn?.addEventListener("click", layerChangers[Enum.LAYER.SATELLITE]);
 
         Control.StreetsLayerBtn?.addEventListener("click", layerChangers[Enum.LAYER.STREETS]);
@@ -488,6 +503,8 @@ export namespace App {
         Control.ColorPicker?.removeEventListener("input", handleColorPickerInput)
         Control.ColorPicker?.removeEventListener("change", handleColorChange)
 
+        Control.SatelliteNoLabelLayerBtn?.removeEventListener("click", layerChangers[Enum.LAYER.SATELLITE_NOLABEL]);
+
         Control.SatelliteLayerBtn?.removeEventListener("click", layerChangers[Enum.LAYER.SATELLITE]);
 
         Control.StreetsLayerBtn?.removeEventListener("click", layerChangers[Enum.LAYER.STREETS]);
@@ -502,12 +519,14 @@ export namespace App {
             Map.removeLayer(Layers[CurrentLayer]);
             CurrentLayer = _layer;
             Layers[CurrentLayer].addTo(Map);
+            localStorage.setItem("mapLayer", CurrentLayer);
         }
     }
 
     /** Layer change callbacks */
     var layerChangers = {
         [Enum.LAYER.SATELLITE]: layerChangerFunction(Enum.LAYER.SATELLITE),
+        [Enum.LAYER.SATELLITE_NOLABEL]: layerChangerFunction(Enum.LAYER.SATELLITE_NOLABEL),
         [Enum.LAYER.STREETS]: layerChangerFunction(Enum.LAYER.STREETS),
     }
 
@@ -614,15 +633,15 @@ export namespace App {
             .catch(() => setError(Enum.FAIL_NAME.INTERNAL))
     }
 
-    function fatalError(text: string, killconnection = true) {
+    async function fatalError(text: string, killconnection = true) {
         Logger.error("Fatal Error", Debug(text));
         setError(Enum.FAIL_NAME.INTERNAL, Msg(text));
 
-        if (killconnection) Connection.StopConnection();
+        if (killconnection) await Connection.StopConnection();
     }
 
     /** Determine what to do upon received guess state, return wheter to exit guess state checker */
-    function determineGuessStatus(status: GuessState): boolean {
+    async function determineGuessStatus(status: GuessState): Promise<boolean>    {
         switch (status) {
             case Enum.GuessState.Submitted:
                 {
@@ -631,7 +650,7 @@ export namespace App {
                 }
             case Enum.GuessState.Banned:
                 {
-                    fatalError("You are banned by the streamer and not allowed participate in any games.");
+                    await fatalError("You are banned by the streamer and not allowed participate in any games.");
                     break;
                 }
             case Enum.GuessState.BotNotFound:
@@ -648,7 +667,7 @@ export namespace App {
                 }
             case Enum.GuessState.InvalidCoordinates:
                 {
-                    fatalError("Invalid coordinates. Refresh the page.");
+                    await fatalError("Invalid coordinates. Refresh the page.");
                     break;
                 }
             case Enum.GuessState.NoGame:
@@ -659,7 +678,7 @@ export namespace App {
                 }
             case Enum.GuessState.NotFound:
                 {
-                    fatalError("Invalid user data. Refresh the page.");
+                    await fatalError("Invalid user data. Refresh the page.");
                     break;
                 }
             case Enum.GuessState.SameCoordinates:
@@ -671,7 +690,10 @@ export namespace App {
             case Enum.GuessState.Success:
                 {
                     setError(Enum.FAIL_NAME.NONE, Msg("Guess Registered Successfully!"));
-                    setTimeout(enableGuessButton, 2500);
+                    if (CurrentMarker?._map)
+                    {
+                        CurrentMarker?.removeFrom(Map);
+                    }
                     break;
                 }
             case Enum.GuessState.TempSuccess:
@@ -693,7 +715,7 @@ export namespace App {
                 }
             case Enum.GuessState.Unknown:
                 {
-                    fatalError("Invalid guess id. Refresh the page.");
+                    await fatalError("Invalid guess id. Refresh the page.");
                     break;
                 }
             default:
@@ -721,7 +743,7 @@ export namespace App {
             await new Promise((res) => setTimeout(res, interval));
             status = await Connection.GetGuessState(guessid)
             Logger.log(Msg(`Guess(${guessid}) status: ${status}`));
-            if (determineGuessStatus(status)) return;
+            if (await determineGuessStatus(status)) return;
         }
 
         handleGuessFailedToRegister()
@@ -804,14 +826,11 @@ export namespace App {
             }
         }, 50);
     }
-
-    // TODO: Show modal to ask for reload on connection failure
-    // TODO: Dont load flags on mobile until button click or make async
-    // TODO: Remove marker on send guess success
     
     /** Set button and control instances */
     function setControls() {
         Control.SatelliteLayerBtn = document.getElementById("inputSate");
+        Control.SatelliteNoLabelLayerBtn = document.getElementById("inputSateNoLbl");
         Control.StreetsLayerBtn = document.getElementById("inputStMp");
 
         Control.ColorBtn = document.getElementById("colorBtn");
@@ -853,6 +872,8 @@ export namespace App {
         Map.attributionControl.addAttribution(Constant.ATTRIBUTIONS);
 
         Layers[CurrentLayer].addTo(Map);
+
+        localStorage.setItem("mapLayer", CurrentLayer);
     }
 
     /** Marker click handle */
@@ -884,11 +905,11 @@ export namespace App {
             var avatar = new LeafIcon({
                 iconUrl: User.profile_image_url,
             })
-            CurrentMarker = new L.Marker([0, 0], { icon: avatar, bubblingMouseEvents: true }).addTo(Map);
+            CurrentMarker = new L.Marker([0, 0], { icon: avatar, bubblingMouseEvents: true }).addTo(Map) as typeof CurrentMarker;
 
             CurrentPopup.options.offset = [-18, -18]
-            CurrentMarker
-                .bindPopup(CurrentPopup)
+
+            CurrentMarker?.bindPopup(CurrentPopup)
                 .on('click', handleMarkerClick);
 
             setTimeout(() => {
@@ -957,8 +978,6 @@ export namespace App {
                 }
             case "showFlags":
                 {
-                    if (Control.FlagDropdown) $(Control.FlagDropdown).empty()
-
                     if (Setting.Streamer.showFlags) {
                         if (Object.entries(Flags).length == 0) {
                             if (Object.entries(FlagsCache).length == 0) {
@@ -992,6 +1011,8 @@ export namespace App {
 
     async function setFlagsDropdown() {
         try {
+            if (Control.FlagDropdown) $(Control.FlagDropdown).empty()
+
             let svgshow = Setting.Streamer.showFlags;
 
             while (settingFlags) {
@@ -1013,7 +1034,7 @@ export namespace App {
 
                     let anc = $("<a>");
                     anc
-                        .append($("<div>").css("background", `${svgshow ? `url('${svg}')` : ""}`))
+                        .append($("<div>").css("background-image", `${svgshow ? `url('${svg}')` : ""}`))
                         .append($("<span>").text(code))
                         .data("flagcode", code);
                     Control.FlagDropdown.appendChild(anc[0] as HTMLElement)
@@ -1082,6 +1103,8 @@ export namespace App {
                 Logger.error(Msg(err));
             });
 
+        await setFlagsDropdown();
+
         await EndInitialize()
     }
 
@@ -1093,6 +1116,8 @@ export namespace App {
             setControls();
 
             guessButtonState(false);
+
+            CurrentLayer = (localStorage.getItem("mapLayer") as LAYER) ?? Enum.LAYER.STREETS;
 
             setMap();
 

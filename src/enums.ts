@@ -5,9 +5,11 @@ export namespace Enum
     export const enum LAYER 
     {
         /** Streets layer */
-        STREETS = 0,
+        STREETS = "0",
         /** Satellite layer */
-        SATELLITE = 1,
+        SATELLITE = "1",
+        /** Satellite layer (No label) */
+        SATELLITE_NOLABEL = "2",
     } 
 
     /** Error types available */
