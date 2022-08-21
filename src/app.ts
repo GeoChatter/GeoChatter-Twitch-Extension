@@ -248,7 +248,7 @@ export namespace App {
         let lts = parseFloat(lats);
         let lns = parseFloat(lngs)
         CurrentGuess = { lat: lts, lng: lns };
-        
+
         nextGuessRand = false;
         nextGuessTemp = false;
 
@@ -885,7 +885,8 @@ export namespace App {
         Map = L.map('map',
             {
                 tap: false,
-                fadeAnimation: true
+                fadeAnimation: true,
+                worldCopyJump: true
             });
 
         Map.setView([0, 0], Constant.MIN_ZOOM);
