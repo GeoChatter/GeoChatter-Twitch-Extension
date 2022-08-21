@@ -243,7 +243,12 @@ export namespace App {
 
         CurrentMarker = null;
 
-        CurrentGuess = { lat: 0, lng: 0 };
+        let lats = localStorage.getItem("LastGuessLat") ?? "0";
+        let lngs = localStorage.getItem("LastGuessLng") ?? "0";
+        let lts = parseFloat(lats);
+        let lns = parseFloat(lngs)
+        CurrentGuess = { lat: lts, lng: lns };
+        
         nextGuessRand = false;
         nextGuessTemp = false;
 
@@ -923,8 +928,12 @@ export namespace App {
 
             let lats = localStorage.getItem("LastGuessLat") ?? "0";
             let lngs = localStorage.getItem("LastGuessLng") ?? "0";
+            let lts = parseFloat(lats);
+            let lns = parseFloat(lngs)
+            localStorage.setItem("LastGuessLat", lts.toPrecision(8))
+            localStorage.setItem("LastGuessLng", lns.toPrecision(8))
             
-            CurrentMarker = new L.Marker([parseFloat(lats), parseFloat(lngs)], { icon: avatar, bubblingMouseEvents: true }).addTo(Map) as typeof CurrentMarker;
+            CurrentMarker = new L.Marker([lts, lns], { icon: avatar, bubblingMouseEvents: true }).addTo(Map) as typeof CurrentMarker;
 
             CurrentPopup.options.offset = [-18, -18]
 
