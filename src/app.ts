@@ -67,21 +67,28 @@ export namespace App {
     /** Available layers */
     export const Layers =
     {
-        [Enum.LAYER.STREETS]: L.tileLayer(Constant.DEFAULT_LAYER + Constant.ACCESS_TOKEN, {
+        [Enum.LAYER.STREETS]: L.tileLayer(Constant.STREETS_LAYER + Constant.ACCESS_TOKEN, {
             attribution: Constant.ATTRIBUTIONS,
             maxZoom: Constant.MAX_ZOOM,
             minZoom: Constant.MIN_ZOOM,
             tileSize: 512,
             zoomOffset: -1
         }),
-        [Enum.LAYER.SATELLITE]: L.tileLayer(Constant.DEFAULT_SAT_LAYER + Constant.ACCESS_TOKEN, {
+        [Enum.LAYER.SATELLITE]: L.tileLayer(Constant.SATELLITE_LAYER + Constant.ACCESS_TOKEN, {
             attribution: Constant.ATTRIBUTIONS,
             maxZoom: Constant.MAX_ZOOM,
             minZoom: Constant.MIN_ZOOM,
             tileSize: 512,
             zoomOffset: -1
         }),
-        [Enum.LAYER.SATELLITE_NOLABEL]: L.tileLayer(Constant.DEFAULT_SAT_NOLABEL_LAYER + Constant.ACCESS_TOKEN, {
+        [Enum.LAYER.SATELLITE_NOLABEL]: L.tileLayer(Constant.SATELLITE_NOLABEL_LAYER + Constant.ACCESS_TOKEN, {
+            attribution: Constant.ATTRIBUTIONS,
+            maxZoom: Constant.MAX_ZOOM,
+            minZoom: Constant.MIN_ZOOM,
+            tileSize: 512,
+            zoomOffset: -1
+        }),
+        [Enum.LAYER.OUTDOORS]: L.tileLayer(Constant.OUTDOORS_LAYER + Constant.ACCESS_TOKEN, {
             attribution: Constant.ATTRIBUTIONS,
             maxZoom: Constant.MAX_ZOOM,
             minZoom: Constant.MIN_ZOOM,
@@ -470,6 +477,8 @@ export namespace App {
         Control.ColorPicker?.addEventListener("input", handleColorPickerInput);
         Control.ColorPicker?.addEventListener("change", handleColorChange);
 
+        Control.OutdoorsLayerBtn?.addEventListener("click", layerChangers[Enum.LAYER.OUTDOORS]);
+
         Control.SatelliteNoLabelLayerBtn?.addEventListener("click", layerChangers[Enum.LAYER.SATELLITE_NOLABEL]);
 
         Control.SatelliteLayerBtn?.addEventListener("click", layerChangers[Enum.LAYER.SATELLITE]);
@@ -505,6 +514,8 @@ export namespace App {
         Control.ColorPicker?.removeEventListener("input", handleColorPickerInput)
         Control.ColorPicker?.removeEventListener("change", handleColorChange)
 
+        Control.OutdoorsLayerBtn?.removeEventListener("click", layerChangers[Enum.LAYER.OUTDOORS]);
+
         Control.SatelliteNoLabelLayerBtn?.removeEventListener("click", layerChangers[Enum.LAYER.SATELLITE_NOLABEL]);
 
         Control.SatelliteLayerBtn?.removeEventListener("click", layerChangers[Enum.LAYER.SATELLITE]);
@@ -530,6 +541,7 @@ export namespace App {
         [Enum.LAYER.SATELLITE]: layerChangerFunction(Enum.LAYER.SATELLITE),
         [Enum.LAYER.SATELLITE_NOLABEL]: layerChangerFunction(Enum.LAYER.SATELLITE_NOLABEL),
         [Enum.LAYER.STREETS]: layerChangerFunction(Enum.LAYER.STREETS),
+        [Enum.LAYER.OUTDOORS]: layerChangerFunction(Enum.LAYER.OUTDOORS),
     }
 
     /** Enable/Disable send guess button */
@@ -834,6 +846,7 @@ export namespace App {
         Control.SatelliteLayerBtn = document.getElementById("inputSate");
         Control.SatelliteNoLabelLayerBtn = document.getElementById("inputSateNoLbl");
         Control.StreetsLayerBtn = document.getElementById("inputStMp");
+        Control.OutdoorsLayerBtn = document.getElementById("inputOutMp");
 
         Control.ColorBtn = document.getElementById("colorBtn");
         Control.ColorPicker = document.getElementById("colorPicker");

@@ -58,6 +58,7 @@ body {
 
 .dropdown-content button:focus {
 	background-color: #f1f1f1;
+    color: black;
 }
 
 .dropdown:focus .dropdown-content {
@@ -158,7 +159,6 @@ button:hover {
 	text-align: center;
 	z-index: 1000;
 	cursor: pointer;
-	padding: 8px;
 	width: 90%;
 	overflow-wrap: break-word;
 	margin-right: 4px;
@@ -414,14 +414,31 @@ button:hover {
 	pointer-events: none;
 }
 
-@media (max-height: 300px) {
+@media (max-width: 300px) {
 	.layer-top {
 		flex-direction: row;
 	}
+
 	#guessBtn {
 		font-size: 1rem;
+		padding: 0.5rem 1rem !important;
 	}
+
 	#infoArea {
 		height: 1rem;
+	}
+
+	#settingCard {
+		width: 80vw;
+		margin: auto 4vw;
+	}
+
+	.show {
+		align-items: flex-end;
+	}
+
+	#layers button {
+		padding: 7px;
+    	width: 100px;
 	}
 }

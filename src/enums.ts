@@ -10,6 +10,8 @@ export namespace Enum
         SATELLITE = "1",
         /** Satellite layer (No label) */
         SATELLITE_NOLABEL = "2",
+        /** MapBox outdoors layer */
+        OUTDOORS = "3",
     } 
 
     /** Error types available */
