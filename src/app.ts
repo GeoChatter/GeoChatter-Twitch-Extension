@@ -24,7 +24,7 @@ export namespace App {
     export var IsMobile: boolean = false;
 
     /** Default tile layer name */
-    const DefaultLayerName = "OpenStreetMap";
+    const DefaultLayerName = "Streets";
     /** Currently displayed layer */
     export var CurrentLayer: string = DefaultLayerName;
     /** Currently displayed popup */
@@ -118,7 +118,7 @@ export namespace App {
     export var StreamerGeoGuessrID: Nullable<string>;
 
     /** App version to check for configuration */
-    const VERSION = "v100";
+    const VERSION = "v110";
 
     /** Handle twitch configuration */
     function handleConfiguration() {
@@ -1016,15 +1016,15 @@ export namespace App {
 
             switch (data.provider)
             {
-                case "OSM":
-                case "MapBox":
+                case "Google":
                     {
                         leaf = L.tileLayer(urlFromLayer(data), {
                             attribution: data.attributions,
                             maxZoom: data.max_zoom,
                             minZoom: data.min_zoom,
                             tileSize: data.tile_size,
-                            zoomOffset: data.zoom_offset
+                            zoomOffset: data.zoom_offset,
+                            subdomains:['mt0','mt1','mt2','mt3']
                         });
                         data.LeafletLayer = leaf;
                         addButtonForLayer(name, data);
