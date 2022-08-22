@@ -24,7 +24,7 @@ export namespace App {
     export var IsMobile: boolean = false;
 
     /** Default tile layer name */
-    const DefaultLayerName = "OSM";
+    const DefaultLayerName = "OpenStreetMap";
     /** Currently displayed layer */
     export var CurrentLayer: string = DefaultLayerName;
     /** Currently displayed popup */
