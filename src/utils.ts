@@ -69,7 +69,7 @@ export namespace Util {
     /** Get ISO data */
     export async function GetISOData(): Promise<ISOData[]> {
         try {
-            const isoData = await fetch(Connection.ExtensionService.Service.ISO)
+            const isoData = await fetch(Connection.ExtensionService.Service.ISO, { cache: "no-cache" })
             const isoObj = await isoData.json() as ISOData[]
 
             return isoObj
