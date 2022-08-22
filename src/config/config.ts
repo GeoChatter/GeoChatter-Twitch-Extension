@@ -1,13 +1,16 @@
 const twitch = window.Twitch.ext;
 const VERSION = "v100";
+
 var AuthData = {} as Twitch.ext.Authorized; 
 
 type BroadcasterConfig = 
 {
-    GGUserID: string
+    GGUserID: string,
+    Environment: "production" | "development"
 };
 
 const GGUserIDInput = document.getElementById("GGUserID") as HTMLInputElement;
+const GCEnvironment = document.getElementById("GCEnvironment") as HTMLSelectElement;
 const ConfigSubmit = document.getElementById("ConfigSubmit") as HTMLButtonElement;
 
 function handleConfig() {
@@ -37,9 +40,10 @@ function handleConfig() {
 
 function setConfigView(cfg: BroadcasterConfig) 
 {
-    if (!GGUserIDInput) return;
+    if (!GGUserIDInput || !GCEnvironment) return;
 
     GGUserIDInput.value = cfg.GGUserID;
+    GCEnvironment.value = cfg.Environment ?? "production";
 }
 
 function disableConfigSubmit(msg: string)
@@ -61,14 +65,19 @@ function handleConfigSubmit()
     disableConfigSubmit("Saving...")
     setTimeout(enableConfigSubmit, 2000)
 
-    if (!GGUserIDInput) return;
+    if (!GGUserIDInput || !GCEnvironment) return;
 
     let newid = GGUserIDInput.value;
     console.log("New ID", newid)
 
     if (!newid) return
 
-    twitch.configuration.set("broadcaster", VERSION, JSON.stringify({GGUserID: newid}))
+    let newenv = GCEnvironment.value;
+    console.log("New env", newenv)
+
+    if (!newenv) return
+
+    twitch.configuration.set("broadcaster", VERSION, JSON.stringify({GGUserID: newid, Environment: newenv} as BroadcasterConfig))
 }
 
 function handleAuth(e: Twitch.ext.Authorized)

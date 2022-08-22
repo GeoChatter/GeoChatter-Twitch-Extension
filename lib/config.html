@@ -15,6 +15,13 @@
             <label for="GGUserID">GeoGuessr User ID:</label>
             <input type="text" name="GGUserID" id="GGUserID" placeholder="Follow the steps below..." style="font-size: 1.3rem;min-width:18rem">
         </div>
+        <div style="padding: 5px;">
+            <label for="GCEnvironment">Extension Environment <span style="font-size: 0.8rem;">(Do not change if you don't know what you're doing)</span>:</label>
+            <select name="GCEnvironment" id="GCEnvironment" style="font-size: 1.3rem;font-weight: bolder;">
+              <option value="production" selected>Production</option>
+              <option value="development">Development</option>
+            </select>
+        </div>
         <div style="padding: 5px">
             <button type="button" id="ConfigSubmit" style="cursor:pointer;font-size: medium;padding: 5px;background: purple;color: white;font-weight: bold;border-radius: 8px">
                 Save Settings

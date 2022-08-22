@@ -52,7 +52,8 @@ declare export global
     /** Twitch Config Broadcaster content */
     export type BroadcasterConfig = 
     {
-        GGUserID: string
+        GGUserID: string,
+        Environment: "production" | "development"
     };
     
     /** SVG dictionary */

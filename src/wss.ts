@@ -1,5 +1,4 @@
 import * as signalR from '@microsoft/signalr';
-import { Constant } from "./constants";
 import { Enum } from "./enums";
 import { Setting } from './settings';
 
@@ -17,17 +16,24 @@ export namespace Connection
     };
 
     /** Main connection */
-    export const CurrentConnection: signalR.HubConnection = new signalR.HubConnectionBuilder()
-        .withUrl(Constant.DEBUG ? Constant.DEV_HUB : Constant.PROD_HUB, {})
-        .build();
+    export var CurrentConnection: Nullable<signalR.HubConnection>;
 
     /** Stop current connection */
     export async function StopConnection()
     {
         Logger.info(Msg("Stopping current connection"))
-        await CurrentConnection.stop()
+        await CurrentConnection?.stop()
     }
 
+    export async function BeginConnection(hub: string)
+    {
+        if (CurrentConnection) await StopConnection()
+
+        CurrentConnection = new signalR.HubConnectionBuilder()
+            .withUrl(hub, {})
+            .build();
+    }
+    
     /** Set settings */
     function setStreamerSettings(options: StreamerSettings)
     {
@@ -47,7 +53,7 @@ export namespace Connection
     {
         Logger.log(Msg("Listening to map features"))
 
-        CurrentConnection.on("SetMapFeatures", function (options) {
+        CurrentConnection?.on("SetMapFeatures", function (options) {
             Logger.log(Msg("SetMapFeatures"), Debug(options))
             setStreamerSettings(options)
         })
@@ -62,7 +68,7 @@ export namespace Connection
 
             Logger.info(Msg("Reconnecting"))
 
-            await CurrentConnection.start()
+            await CurrentConnection?.start()
 
             await mapLogin(mapId);
         }
@@ -81,7 +87,7 @@ export namespace Connection
 
             Logger.log(Msg("Invoke MapLogin, mapId"), Debug(mapId));
 
-            const res = await CurrentConnection.invoke("MapLogin", mapId);
+            const res = await CurrentConnection?.invoke("MapLogin", mapId);
 
             if (res)
             {
@@ -105,6 +111,8 @@ export namespace Connection
     /** Listen to failures */
     function listenToProblems(mapId: string)
     {
+        if (!CurrentConnection) return;
+
         Logger.log(Msg("Listening connection close events"))
         CurrentConnection.onreconnecting = (e: any) => {
             Logger.log(Msg("Default reconnecting from singalR"),Debug(e))
@@ -121,9 +129,17 @@ export namespace Connection
 
         try 
         {            
-            if (!botName) return Logger.error(Msg("Can't invoke MapLogin with invalid botName"))
+            if (!CurrentConnection) return {
+                msg: Msg("Connection wasn't established"),
+                state: Enum.CONNECTIONSTART_STATE.ERROR
+            }
 
-            await CurrentConnection.start()
+            if (!botName) return {
+                msg: Msg("Can't invoke MapLogin with invalid botName"),
+                state: Enum.CONNECTIONSTART_STATE.ERROR
+            }
+
+            await CurrentConnection?.start()
             Logger.info(Msg("Connection started"))
 
             let id = await GetMapID(botName)
@@ -190,6 +206,8 @@ export namespace Connection
     {
         try 
         {
+            if (!CurrentConnection) return [Debug("Connection wasn't established"), -1]
+
             if (!VerifyMessage(guess) 
                 || !guess.lat 
                 || !guess.lng 
@@ -226,8 +244,10 @@ export namespace Connection
         let res: number = -1
         try 
         {
+            if (!CurrentConnection) throw new Error("Connection wasn't established.")
+
             Logger.log(Debug("Invoke SendGuessToClients, guess data:"), Debug(guess))
-            res = await CurrentConnection.invoke("SendGuessToClients", guess)
+            res = await CurrentConnection.invoke("SendGuessToClients", guess);
         }
         catch (err) 
         {
@@ -243,7 +263,7 @@ export namespace Connection
         try 
         {
             Logger.log(Debug("Invoke GetTileProvider"))
-            let res: Nullable<string> = await CurrentConnection.invoke("GetTileProvider");
+            let res: Nullable<string> = await CurrentConnection?.invoke("GetTileProvider");
 
             if (!res)
             {
@@ -266,6 +286,7 @@ export namespace Connection
     {
         try 
         {
+            if (!CurrentConnection) return Logger.error(Debug("Connection wasn't established"))
             if (!VerifyMessage(data) || !data.flag) return Logger.error(Debug("Can't invoke SendFlagToClients with invalid data"), Debug(data))
 
             Logger.log(Debug("Invoke SendFlagToClients, flag data"), Debug(data))
@@ -282,6 +303,7 @@ export namespace Connection
     {
         try 
         {
+            if (!CurrentConnection) return Logger.error(Debug("Connection wasn't established"))
             if (!VerifyMessage(data) || !data.color) return Logger.error(Debug("Can't invoke SendColorToClients with invalid data"), Debug(data))
 
             Logger.log(Debug("Invoke SendColorToClients, color data:"), Debug(data))
@@ -299,6 +321,7 @@ export namespace Connection
     {
         try 
         {
+            if (!CurrentConnection) return Logger.error(Debug("Connection wasn't established"))
             if (id <= 0) return Logger.error(Debug("Can't invoke GetGuessState with invalid id"), Debug(id))
 
             Logger.log(Debug("Invoke GetGuessState, id:"), Debug(id))
@@ -316,6 +339,7 @@ export namespace Connection
     {
         try 
         {
+            if (!CurrentConnection) return Logger.error(Debug("Connection wasn't established"))
             if (!channelName) return Logger.error(Debug("Can't invoke GetMapId with invalid channelName"))
 
             Logger.log(Debug("Invoke GetMapId, channelName:"), Debug(channelName))

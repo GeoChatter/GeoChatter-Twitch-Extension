@@ -89,10 +89,8 @@ export namespace App {
         userId: ""
     };
 
-    export var StreamerGeoGuessrID: Nullable<string>;
-
     /** Map instance */
-    export var Map: L.Map;
+    export var Map: Nullable<L.Map>;
 
     /** Marker icon class extended */
     export var LeafIcon = L.Icon.extend({
@@ -113,6 +111,12 @@ export namespace App {
         [Enum.FAIL_NAME.INTERNAL]: "Something went wrong, reload the page."
     }
 
+    /** Hub to connect to */
+    export var HubURL: Nullable<string>;
+
+    /** Streamer GeoGuessr ID */
+    export var StreamerGeoGuessrID: Nullable<string>;
+
     /** App version to check for configuration */
     const VERSION = "v100";
 
@@ -127,6 +131,19 @@ export namespace App {
                 Logger.debug(Msg("Configuration event"), Debug(config));
 
                 StreamerGeoGuessrID = config.GGUserID
+                switch (config.Environment)
+                {
+                    case "development":
+                        {
+                            HubURL = Constant.DEV_HUB;
+                            break;
+                        }
+                    default:
+                        {
+                            HubURL = Constant.PROD_HUB;
+                            break;
+                        }
+                }
 
                 if (!StreamerGeoGuessrID) {
                     Logger.error(Msg("Streamer GeoGuessr ID is invalid!"))
@@ -275,7 +292,7 @@ export namespace App {
 
     /** Handle click on map instance */
     export function handleMapClick(e: L.LeafletMouseEvent) {
-        if (!CurrentMarker || !CurrentPopup) return;
+        if (!CurrentMarker || !CurrentPopup || !Map) return;
 
         CurrentGuess.lat = e.latlng.lat;
         CurrentGuess.lng = e.latlng.lng;
@@ -339,10 +356,10 @@ export namespace App {
         CurrentFeatureFlag = svg;
 
         if (CurrentGeoJSONLayer) {
-            Map.removeLayer(CurrentGeoJSONLayer);
+            Map?.removeLayer(CurrentGeoJSONLayer);
         }
 
-        if (country && Setting.Streamer.showBorders && Control.BorderCB?.checked) {
+        if (country && Setting.Streamer.showBorders && Control.BorderCB?.checked && Map) {
             CurrentGeoJSONLayer = L.geoJSON(country, GeoJSONStyle).addTo(Map);
         }
 
@@ -449,7 +466,7 @@ export namespace App {
         Control.ColorPicker?.addEventListener("input", handleColorPickerInput);
         Control.ColorPicker?.addEventListener("change", handleColorChange);
 
-        Map.on('click', handleMapClick);
+        Map?.on('click', handleMapClick);
     }
 
     function urlFromLayer(lay: Layer)
@@ -475,7 +492,7 @@ export namespace App {
             .text(name)
             .on("click", () => {
                 let _lay = Connection.ExtensionService.Layers[CurrentLayer]?.LeafletLayer;
-                if (!_lay || CurrentLayer == n) return;
+                if (!_lay || CurrentLayer == n || !Map) return;
 
                 Map.removeLayer(_lay);
                 CurrentLayer = n;
@@ -675,7 +692,7 @@ export namespace App {
             case Enum.GuessState.Success:
                 {
                     setError(Enum.FAIL_NAME.NONE, Msg("Guess Registered Successfully!"));
-                    if (CurrentMarker?._map)
+                    if (CurrentMarker?._map && Map)
                     {
                         CurrentMarker?.removeFrom(Map);
                     }
@@ -895,14 +912,24 @@ export namespace App {
 
         handleLocalStorage();
 
-        if (!StreamerGeoGuessrID) {
+        if (!StreamerGeoGuessrID)
+        {
             let m = "Streamer configuration is missing their GeoGuessr ID!";
             setError(Enum.FAIL_NAME.NONE, m);
             Logger.error(Msg(m));
             return;
         }
 
+        if (!HubURL)
+        {
+            let m = "Streamer configuration is missing GeoChatter extension environment setup!";
+            setError(Enum.FAIL_NAME.NONE, m);
+            Logger.error(Msg(m));
+            return;
+        }
         Setting.OnRefresh = RefreshViewBySetting;
+
+        await Connection.BeginConnection(HubURL)
 
         let res = await Connection.StartConnection(StreamerGeoGuessrID)
             .catch(err => {
@@ -922,6 +949,15 @@ export namespace App {
             
             setMap();
 
+            if (!Map)
+            {
+                let m = "Failed to initalize the map, reload the page.";
+                setError(Enum.FAIL_NAME.NONE, m);
+                Logger.error(Msg(m));
+                await Connection.StopConnection();
+                return
+            }
+    
             addEventListeners();
 
             if (User.profile_image_url) {
@@ -947,7 +983,7 @@ export namespace App {
 
                 setTimeout(() => {
                     CurrentMarker?.openPopup();
-                    Map.flyTo(markerpos, 10, { duration: 3 });
+                    Map?.flyTo(markerpos, 10, { duration: 3 });
                 }, 500);
             }
             else {
