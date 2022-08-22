@@ -46,6 +46,7 @@ export namespace Setting {
             var oldVal = Streamer[key];
             if (key == "installedFlagPacks")
             {
+                // TODO: Flag packs
                 if (!newVal) return;
     
                 Streamer[key] = JSON.parse(newVal)

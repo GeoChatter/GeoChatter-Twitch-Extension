@@ -4,7 +4,8 @@ import { Setting } from "./settings";
 import { Connection } from "./wss";
 
 /** Utility */
-export namespace Util {
+export namespace Util 
+{
     /** Get and return map features */
     export async function GetFeatures() {
         const result_borders: GCFeatureCollection[] = []
@@ -113,6 +114,7 @@ export namespace Util {
         return isos.find(country => country.Alpha2 === iso)?.name
     }
 
+    /** Get feature data from given coordinates */
     export async function GetCountry(flags: SVGDictionary,
         allBorders: GCFeatureCollection[],
         isos: ISOData[],
