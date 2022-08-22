@@ -1,11 +1,11 @@
 {
   "dependencies": {
+    "@microsoft/signalr": "^6.0.8",
     "@turf/turf": "^6.5.0",
     "jszip": "^3.10.1",
     "leaflet": "^1.8.0"
   },
   "devDependencies": {
-    "@microsoft/signalr": "^6.0.8",
     "@types/jquery": "^3.5.14",
     "@types/leaflet": "^1.7.11",
     "@types/twitch-ext": "^1.24.4",

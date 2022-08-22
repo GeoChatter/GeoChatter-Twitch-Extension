@@ -4,7 +4,8 @@ import { Setting } from "./settings";
 import { Connection } from "./wss";
 
 /** Utility */
-export namespace Util {
+export namespace Util 
+{
     /** Get and return map features */
     export async function GetFeatures() {
         const result_borders: GCFeatureCollection[] = []
@@ -69,7 +70,7 @@ export namespace Util {
     /** Get ISO data */
     export async function GetISOData(): Promise<ISOData[]> {
         try {
-            const isoData = await fetch(Connection.ExtensionService.Service.ISO)
+            const isoData = await fetch(Connection.ExtensionService.Service.ISO, { cache: "no-cache" })
             const isoObj = await isoData.json() as ISOData[]
 
             return isoObj
@@ -113,6 +114,7 @@ export namespace Util {
         return isos.find(country => country.Alpha2 === iso)?.name
     }
 
+    /** Get feature data from given coordinates */
     export async function GetCountry(flags: SVGDictionary,
         allBorders: GCFeatureCollection[],
         isos: ISOData[],
