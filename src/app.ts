@@ -918,6 +918,8 @@ export namespace App {
             
             setLayers();
 
+            ISO = await Util.GetISOData();
+            
             setMap();
 
             addEventListeners();
@@ -978,7 +980,6 @@ export namespace App {
 
             switch (data.provider)
             {
-                case "OSM":
                 case "MapBox":
                     {
                         leaf = L.tileLayer(urlFromLayer(data), {
@@ -989,14 +990,12 @@ export namespace App {
                             zoomOffset: data.zoom_offset
                         });
                         data.LeafletLayer = leaf;
+                        addButtonForLayer(name, data);
                         break;
                     }
                 default: 
                     break;
             }
-            
-
-            addButtonForLayer(name, data);
         }
     }
 
