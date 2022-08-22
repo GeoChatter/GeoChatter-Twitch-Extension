@@ -24,7 +24,7 @@ export namespace App {
     export var IsMobile: boolean = false;
 
     /** Default tile layer name */
-    const DefaultLayerName = "Streets";
+    const DefaultLayerName = "Google Streets";
     /** Currently displayed layer */
     export var CurrentLayer: string = DefaultLayerName;
     /** Currently displayed popup */
@@ -475,7 +475,6 @@ export namespace App {
         {
             case "MapBox":
                 return `${lay.source}?optimize=true&access_token=${lay.access_token}`
-            case "OSM":
             default:
                 return `${lay.source}`
         }
@@ -497,7 +496,7 @@ export namespace App {
                 Map.removeLayer(_lay);
                 CurrentLayer = n;
                 l.LeafletLayer?.addTo(Map);
-                localStorage.setItem("mapLayer", CurrentLayer);
+                localStorage.setItem("mapLayerv110", CurrentLayer);
             });
 
         if (Control.LayersDropdown) $(Control.LayersDropdown).append(b)
@@ -867,7 +866,7 @@ export namespace App {
         Map?.remove();
 
         let curr = Connection.ExtensionService.Layers[CurrentLayer];
-        if (!curr) 
+        if (!curr || curr.provider != "Google") 
         {
             CurrentLayer = DefaultLayerName;
             curr = Connection.ExtensionService.Layers[CurrentLayer];
@@ -884,7 +883,7 @@ export namespace App {
 
         curr.LeafletLayer?.addTo(Map);
 
-        localStorage.setItem("mapLayer", CurrentLayer);
+        localStorage.setItem("mapLayerv110", CurrentLayer);
     }
 
     /** Marker click handle */
@@ -1022,9 +1021,7 @@ export namespace App {
                             attribution: data.attributions,
                             maxZoom: data.max_zoom,
                             minZoom: data.min_zoom,
-                            tileSize: data.tile_size,
-                            zoomOffset: data.zoom_offset,
-                            subdomains:['mt0','mt1','mt2','mt3']
+                            subdomains: ['mt0','mt1','mt2','mt3']
                         });
                         data.LeafletLayer = leaf;
                         addButtonForLayer(name, data);
@@ -1198,7 +1195,7 @@ export namespace App {
 
             guessButtonState(false);
 
-            CurrentLayer = localStorage.getItem("mapLayer") ?? DefaultLayerName;
+            CurrentLayer = localStorage.getItem("mapLayerv110") ?? DefaultLayerName;
 
             while (!WasAuthHandlerInvoked) {
                 Logger.debug("Waiting for Twitch auth handler...");
