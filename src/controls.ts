@@ -38,15 +38,6 @@ export namespace Control
 
     /** Random Guess button */
     export var RandomBtn: Nullable<HTMLElement>;
-
-    /** Satellite Layer button */
-    export var SatelliteLayerBtn: Nullable<HTMLElement>;
-    /** Satellite No Label Layer button */
-    export var SatelliteNoLabelLayerBtn: Nullable<HTMLElement>;
-    /** Streets Layer button */
-    export var StreetsLayerBtn: Nullable<HTMLElement>;
-    /** Outdoors Layer button */
-    export var OutdoorsLayerBtn: Nullable<HTMLElement>;
 }
 
 window.Control = Control;

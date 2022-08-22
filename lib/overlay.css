@@ -140,6 +140,9 @@ button:hover {
 	font-family: sans-serif;
 	text-align: center;
 	z-index: 1000;
+	max-height: 30vh;
+	overflow-y: auto;
+	overflow-x: hidden;
 }
 
 #layers input {

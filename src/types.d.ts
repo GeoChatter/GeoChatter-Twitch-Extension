@@ -129,6 +129,54 @@ declare export global
         shapeLevel: "ADM0" | "ADM1" | "ADM2"
     }
 
+    /** Leaflet tile layer data from GeoChatter services */
+    export type Layer = {
+        /** Tile Provider */
+        provider: "MapBox" | "Google" | "OSM"
+        /** Tile layer url OR google maps layer type */
+        source: string
+        /** Access token for MapBox */
+        access_token: string
+        /** Layer attributions */
+        attributions: string
+        /** Minimum zoom level */
+        min_zoom: number
+        /** Maximum zoom level */
+        max_zoom: number
+        /** Tile size */
+        tile_size: number
+        /** Zoom offset */
+        zoom_offset: number
+        /** Map center */
+		center: [number, number]
+        /** Map options */
+		options: L.MapOptions
+
+        /** Leaflet layer instance, gets set after initializer finalizes */
+        LeafletLayer?: L.Layer
+    }
+
+    /** Links for utility services */
+    export type Service = {
+        /** ISO data url */
+        ISO: string
+        /** GeoChatter borders url */
+        Borders: string
+        /** GeoChatter flags url */
+        Flags: string
+    }
+
+    /** Layer and Link provider service */
+    export type GeoChatterExtensionService = {
+        /** Available layers for the extension */
+        Layers: {
+            /** Layer name and data */
+            [name: string]: Layer
+        }
+        /** Service endpoints */
+        Service: Service
+    }
+
     /** Twitch user data */
     export type UserData = {
         /** Map ID */

@@ -6,6 +6,16 @@ import { Setting } from './settings';
 /** WSS methods */
 export namespace Connection
 {
+    /** Map layers and available endpoints */
+    export var ExtensionService: GeoChatterExtensionService = {
+        Layers: {},
+        Service: {
+            Borders: "",
+            Flags: "",
+            ISO: ""
+        }
+    };
+
     /** Main connection */
     export const CurrentConnection: signalR.HubConnection = new signalR.HubConnectionBuilder()
         .withUrl(Constant.DEBUG ? Constant.DEV_HUB : Constant.PROD_HUB, {})
@@ -77,15 +87,18 @@ export namespace Connection
             {
                 Logger.log(Msg("MapLogin received"), Debug(res))
                 setStreamerSettings(res)
+                return true
             }
             else
             {
                 Logger.warn(Msg("MapLogin empty"))
+                return false
             }
         }
         catch(e)
         {
             Logger.error(Msg(e));
+            return false
         }
     }
 
@@ -130,16 +143,33 @@ export namespace Connection
             if (!Setting.MapId)
             {
                 return {
-                    msg: "Stopping the connection because MapId was empty",
+                    msg: "Stopping the connection because no game was found for the streamer.",
                     state: Enum.CONNECTIONSTART_STATE.ERROR
                 };
             }
 
-            await mapLogin(Setting.MapId);
+            let s = await Connection.SetService()
+            if (!s)
+            {
+                return {
+                    msg: "Failed to get providers, reload the page.",
+                    state: Enum.CONNECTIONSTART_STATE.ERROR
+                };
+            }
+
+            s = await mapLogin(Setting.MapId);
+            if (!s)
+            {
+                return {
+                    msg: Setting.MapId + " named game couldn't be found, reload the page.",
+                    state: Enum.CONNECTIONSTART_STATE.ERROR
+                };
+            }
             
             listenToMapFeatures()
 
             listenToProblems(botName)
+
             return {
                 msg: "",
                 state: Enum.CONNECTIONSTART_STATE.STARTED
@@ -205,6 +235,30 @@ export namespace Connection
             return [err, -1]
         }
         return ["", res]
+    }
+
+    /** Get endpoint and layers */
+    export async function SetService(): Promise<boolean>
+    {
+        try 
+        {
+            Logger.log(Debug("Invoke GetTileProvider"))
+            let res: Nullable<string> = await CurrentConnection.invoke("GetTileProvider");
+
+            if (!res)
+            {
+                Logger.error(Msg("Failed to get GeoChatter service providers"))
+                return false
+            }
+            Logger.info(Msg("Successfully set GeoChatter service providers"), Debug(res));
+            ExtensionService = JSON.parse(res);
+            return true;
+        } 
+        catch (err) 
+        {
+            Logger.error(Msg(err))
+            return false
+        }
     }
 
     /** Send user flag request */

@@ -1,7 +1,7 @@
-import { Constant } from "./constants";
 import { Feature, Geometry, FeatureCollection, Point, point, pointsWithinPolygon, Polygon, MultiPolygon } from '@turf/turf';
 import * as JSZip from 'jszip';
 import { Setting } from "./settings";
+import { Connection } from "./wss";
 
 /** Utility */
 export namespace Util {
@@ -9,7 +9,7 @@ export namespace Util {
     export async function GetFeatures() {
         const result_borders: GCFeatureCollection[] = []
         try {
-            const response = await fetch(Constant.BORDERS_URL, { cache: "no-cache" })
+            const response = await fetch(Connection.ExtensionService.Service.Borders, { cache: "no-cache" })
             const blob = await response.blob();
             const loadedZip = await JSZip.loadAsync(blob)
 
@@ -44,7 +44,7 @@ export namespace Util {
     export async function GetFlags() {
         const svgs = {} as SVGDictionary
         try {
-            const response = await fetch(Constant.FLAGS_URL, { cache: "no-cache" })
+            const response = await fetch(Connection.ExtensionService.Service.Flags, { cache: "no-cache" })
             const blob = await response.blob();
             const loadedZip = await JSZip.loadAsync(blob)
             for (const countryFile of Object.values(loadedZip.files)) {
@@ -69,7 +69,7 @@ export namespace Util {
     /** Get ISO data */
     export async function GetISOData(): Promise<ISOData[]> {
         try {
-            const isoData = await fetch(Constant.ISO_URL)
+            const isoData = await fetch(Connection.ExtensionService.Service.ISO)
             const isoObj = await isoData.json() as ISOData[]
 
             return isoObj

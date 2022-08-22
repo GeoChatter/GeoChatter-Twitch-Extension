@@ -1,19 +1,6 @@
 /** Enums */
 export namespace Enum
 {    
-    /** Map layers available */
-    export const enum LAYER 
-    {
-        /** Streets layer */
-        STREETS = "0",
-        /** Satellite layer */
-        SATELLITE = "1",
-        /** Satellite layer (No label) */
-        SATELLITE_NOLABEL = "2",
-        /** MapBox outdoors layer */
-        OUTDOORS = "3",
-    } 
-
     /** Error types available */
     export const enum FAIL_NAME
     {

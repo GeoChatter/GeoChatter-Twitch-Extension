@@ -23,8 +23,10 @@ export namespace App {
     /** Wheter platform is mobile */
     export var IsMobile: boolean = false;
 
+    /** Default tile layer name */
+    const DefaultLayerName = "OSM";
     /** Currently displayed layer */
-    export var CurrentLayer: LAYER = Enum.LAYER.STREETS;
+    export var CurrentLayer: string = DefaultLayerName;
     /** Currently displayed popup */
     export var CurrentPopup: Nullable<L.Popup>;
     /** Currently displayed marker */
@@ -62,39 +64,6 @@ export namespace App {
         style: {
             fillOpacity: 0.1
         }
-    };
-
-    /** Available layers */
-    export const Layers =
-    {
-        [Enum.LAYER.STREETS]: L.tileLayer(Constant.STREETS_LAYER + Constant.ACCESS_TOKEN, {
-            attribution: Constant.ATTRIBUTIONS,
-            maxZoom: Constant.MAX_ZOOM,
-            minZoom: Constant.MIN_ZOOM,
-            tileSize: 512,
-            zoomOffset: -1
-        }),
-        [Enum.LAYER.SATELLITE]: L.tileLayer(Constant.SATELLITE_LAYER + Constant.ACCESS_TOKEN, {
-            attribution: Constant.ATTRIBUTIONS,
-            maxZoom: Constant.MAX_ZOOM,
-            minZoom: Constant.MIN_ZOOM,
-            tileSize: 512,
-            zoomOffset: -1
-        }),
-        [Enum.LAYER.SATELLITE_NOLABEL]: L.tileLayer(Constant.SATELLITE_NOLABEL_LAYER + Constant.ACCESS_TOKEN, {
-            attribution: Constant.ATTRIBUTIONS,
-            maxZoom: Constant.MAX_ZOOM,
-            minZoom: Constant.MIN_ZOOM,
-            tileSize: 512,
-            zoomOffset: -1
-        }),
-        [Enum.LAYER.OUTDOORS]: L.tileLayer(Constant.OUTDOORS_LAYER + Constant.ACCESS_TOKEN, {
-            attribution: Constant.ATTRIBUTIONS,
-            maxZoom: Constant.MAX_ZOOM,
-            minZoom: Constant.MIN_ZOOM,
-            tileSize: 512,
-            zoomOffset: -1
-        })
     };
 
     /** Helix request headers */
@@ -237,7 +206,7 @@ export namespace App {
 
         IsMobile = false;
 
-        CurrentLayer = Enum.LAYER.STREETS;
+        CurrentLayer = DefaultLayerName;
 
         CurrentPopup = null;
 
@@ -456,7 +425,6 @@ export namespace App {
 
     /** Add all event listeners to buttons and instances */
     export function addEventListeners() {
-        Setting.OnRefresh = RefreshViewBySetting;
 
         if (!IsMobile) {
             // document.body.addEventListener("keydown", handleSpacebar)
@@ -482,21 +450,47 @@ export namespace App {
         Control.ColorPicker?.addEventListener("input", handleColorPickerInput);
         Control.ColorPicker?.addEventListener("change", handleColorChange);
 
-        Control.OutdoorsLayerBtn?.addEventListener("click", layerChangers[Enum.LAYER.OUTDOORS]);
-
-        Control.SatelliteNoLabelLayerBtn?.addEventListener("click", layerChangers[Enum.LAYER.SATELLITE_NOLABEL]);
-
-        Control.SatelliteLayerBtn?.addEventListener("click", layerChangers[Enum.LAYER.SATELLITE]);
-
-        Control.StreetsLayerBtn?.addEventListener("click", layerChangers[Enum.LAYER.STREETS]);
-
         Map.on('click', handleMapClick);
     }
 
+    function urlFromLayer(lay: Layer)
+    {
+        switch (lay.provider)
+        {
+            case "MapBox":
+                return `${lay.source}?optimize=true&access_token=${lay.access_token}`
+            case "OSM":
+            default:
+                return `${lay.source}`
+        }
+    }
+
+    /** Add layer switch button to dropdown */
+    function addButtonForLayer(name: string, lay: Layer)
+    {
+        let n = name;
+        let l = lay;
+        let b = $("<button>")
+            .addClass("dropbtn")
+            .attr("data-tooltip", name)
+            .text(name)
+            .on("click", () => {
+                let _lay = Connection.ExtensionService.Layers[CurrentLayer]?.LeafletLayer;
+                if (!_lay || CurrentLayer == n) return;
+
+                Map.removeLayer(_lay);
+                CurrentLayer = n;
+                l.LeafletLayer?.addTo(Map);
+                localStorage.setItem("mapLayer", CurrentLayer);
+            });
+
+        if (Control.LayersDropdown) $(Control.LayersDropdown).append(b)
+    } 
     /** Remove all event listeners to buttons and instances */
     export function removeEventListeners() {
-        Setting.OnRefresh = null;
 
+        Setting.OnRefresh = null;
+        
         if (!IsMobile) {
             // document.body.removeEventListener("keydown", handleSpacebar)
         }
@@ -519,34 +513,7 @@ export namespace App {
         Control.ColorPicker?.removeEventListener("input", handleColorPickerInput)
         Control.ColorPicker?.removeEventListener("change", handleColorChange)
 
-        Control.OutdoorsLayerBtn?.removeEventListener("click", layerChangers[Enum.LAYER.OUTDOORS]);
-
-        Control.SatelliteNoLabelLayerBtn?.removeEventListener("click", layerChangers[Enum.LAYER.SATELLITE_NOLABEL]);
-
-        Control.SatelliteLayerBtn?.removeEventListener("click", layerChangers[Enum.LAYER.SATELLITE]);
-
-        Control.StreetsLayerBtn?.removeEventListener("click", layerChangers[Enum.LAYER.STREETS]);
-
-        Map.removeEventListener('click', handleMapClick);
-    }
-
-    /** Layer change callback creator */
-    function layerChangerFunction(layer: LAYER) {
-        let _layer = layer;
-        return () => {
-            Map.removeLayer(Layers[CurrentLayer]);
-            CurrentLayer = _layer;
-            Layers[CurrentLayer].addTo(Map);
-            localStorage.setItem("mapLayer", CurrentLayer);
-        }
-    }
-
-    /** Layer change callbacks */
-    var layerChangers = {
-        [Enum.LAYER.SATELLITE]: layerChangerFunction(Enum.LAYER.SATELLITE),
-        [Enum.LAYER.SATELLITE_NOLABEL]: layerChangerFunction(Enum.LAYER.SATELLITE_NOLABEL),
-        [Enum.LAYER.STREETS]: layerChangerFunction(Enum.LAYER.STREETS),
-        [Enum.LAYER.OUTDOORS]: layerChangerFunction(Enum.LAYER.OUTDOORS),
+        Map?.removeEventListener('click', handleMapClick);
     }
 
     /** Enable/Disable send guess button */
@@ -848,10 +815,6 @@ export namespace App {
     
     /** Set button and control instances */
     function setControls() {
-        Control.SatelliteLayerBtn = document.getElementById("inputSate");
-        Control.SatelliteNoLabelLayerBtn = document.getElementById("inputSateNoLbl");
-        Control.StreetsLayerBtn = document.getElementById("inputStMp");
-        Control.OutdoorsLayerBtn = document.getElementById("inputOutMp");
 
         Control.ColorBtn = document.getElementById("colorBtn");
         Control.ColorPicker = document.getElementById("colorPicker");
@@ -882,17 +845,23 @@ export namespace App {
     function setMap() {
         Map?.remove();
 
-        Map = L.map('map',
+        let curr = Connection.ExtensionService.Layers[CurrentLayer];
+        if (!curr) 
+        {
+            CurrentLayer = DefaultLayerName;
+            curr = Connection.ExtensionService.Layers[CurrentLayer];
+            if (!curr) 
             {
-                tap: false,
-                fadeAnimation: true,
-                worldCopyJump: true
-            });
+                return
+            }
+        }
 
-        Map.setView([0, 0], Constant.MIN_ZOOM);
-        Map.attributionControl.addAttribution(Constant.ATTRIBUTIONS);
+        Map = L.map('map', curr.options);
 
-        Layers[CurrentLayer].addTo(Map);
+        Map.setView(curr.center, curr.min_zoom);
+        Map.attributionControl.addAttribution(curr.attributions);
+
+        curr.LeafletLayer?.addTo(Map);
 
         localStorage.setItem("mapLayer", CurrentLayer);
     }
@@ -903,7 +872,7 @@ export namespace App {
         handleMapClick(event);
     }
 
-    /** Finalize main initializing */
+    /** Post Twitch auth main initializing */
     async function EndInitialize() {
         CurrentPopup = L.popup(
             {
@@ -911,7 +880,7 @@ export namespace App {
                 closeButton: false,
                 zoomAnimation: true
             })
-            .setContent('<b>Click somewhere and click "Guess" to make your guess!</b>');
+            .setContent('<b>Click somewhere and make a guess!</b>');
 
         await collectHelix();
 
@@ -922,44 +891,14 @@ export namespace App {
 
         handleLocalStorage();
 
-        if (User.profile_image_url) {
-            var avatar = new LeafIcon({
-                iconUrl: User.profile_image_url,
-            })
-
-            let lats = localStorage.getItem("LastGuessLat") ?? "0";
-            let lngs = localStorage.getItem("LastGuessLng") ?? "0";
-            let lts = parseFloat(lats);
-            let lns = parseFloat(lngs)
-            localStorage.setItem("LastGuessLat", lts.toPrecision(8))
-            localStorage.setItem("LastGuessLng", lns.toPrecision(8))
-            
-            CurrentMarker = new L.Marker([lts, lns], { icon: avatar, bubblingMouseEvents: true }).addTo(Map) as typeof CurrentMarker;
-
-            CurrentPopup.options.offset = [-18, -18]
-
-            CurrentMarker?.bindPopup(CurrentPopup)
-                .on('click', handleMarkerClick);
-
-            setTimeout(() => {
-                CurrentMarker?.openPopup();
-            }, 750);
-        }
-        else {
-            CurrentPopup
-                .setLatLng({ lat: 0, lng: 0 })
-                .addTo(Map)
-                .on('click', handleMarkerClick);
-        }
-
-        IsInitialized = true;
-
         if (!StreamerGeoGuessrID) {
             let m = "Streamer configuration is missing their GeoGuessr ID!";
             setError(Enum.FAIL_NAME.NONE, m);
             Logger.error(Msg(m));
             return;
         }
+
+        Setting.OnRefresh = RefreshViewBySetting;
 
         let res = await Connection.StartConnection(StreamerGeoGuessrID)
             .catch(err => {
@@ -971,14 +910,89 @@ export namespace App {
             })
 
         if (res.state == Enum.CONNECTIONSTART_STATE.STARTED) {
-            Logger.info(Msg("Established connection, finalizing initializer."), Debug(res))
+            Logger.info(Msg("Established connection, finalizing initializer."), Debug(res));
+            
+            setLayers();
+
+            setMap();
+
+            addEventListeners();
+
+            if (User.profile_image_url) {
+                var avatar = new LeafIcon({
+                    iconUrl: User.profile_image_url,
+                })
+
+                let lats = localStorage.getItem("LastGuessLat") ?? "0";
+                let lngs = localStorage.getItem("LastGuessLng") ?? "0";
+                let lts = parseFloat(lats);
+                let lns = parseFloat(lngs)
+                localStorage.setItem("LastGuessLat", lts.toPrecision(8))
+                localStorage.setItem("LastGuessLng", lns.toPrecision(8))
+                
+                let markerpos = {lat: lts, lng: lns};
+
+                CurrentMarker = new L.Marker(markerpos, { icon: avatar, bubblingMouseEvents: true }).addTo(Map) as typeof CurrentMarker;
+
+                CurrentPopup.options.offset = [-18, -18]
+
+                CurrentMarker?.bindPopup(CurrentPopup)
+                    .on('click', handleMarkerClick);
+
+                setTimeout(() => {
+                    CurrentMarker?.openPopup();
+                    Map.flyTo(markerpos, 10, { duration: 3 });
+                }, 500);
+            }
+            else {
+                CurrentPopup
+                    .setLatLng(Connection.ExtensionService.Layers[CurrentLayer]?.center ?? [0, 0])
+                    .addTo(Map)
+                    .on('click', handleMarkerClick);
+            }
             enableGuessButton();
+
+            IsInitialized = true;
             Initialized = new Date();
         }
         else if (res.state == Enum.CONNECTIONSTART_STATE.ERROR) {
             setError(Enum.FAIL_NAME.NONE, res.msg);
             Logger.error(Msg(res));
             await Connection.StopConnection();
+        }
+    }
+
+    function setLayers()
+    {
+        if (Control.LayersDropdown) $(Control.LayersDropdown).empty();
+
+        for(let [name, data] of Object.entries(Connection.ExtensionService.Layers))
+        {
+            Logger.debug(Debug("Adding button for layer..."), Debug(name), Debug(data))
+
+            let leaf = null;
+
+            switch (data.provider)
+            {
+                case "OSM":
+                case "MapBox":
+                    {
+                        leaf = L.tileLayer(urlFromLayer(data), {
+                            attribution: data.attributions,
+                            maxZoom: data.max_zoom,
+                            minZoom: data.min_zoom,
+                            tileSize: data.tile_size,
+                            zoomOffset: data.zoom_offset
+                        });
+                        data.LeafletLayer = leaf;
+                        break;
+                    }
+                default: 
+                    break;
+            }
+            
+
+            addButtonForLayer(name, data);
         }
     }
 
@@ -1132,7 +1146,7 @@ export namespace App {
                 Logger.error(Msg(err));
             });
 
-        await setFlagsDropdown();
+        setFlagsDropdown();
 
         await EndInitialize()
     }
@@ -1140,17 +1154,11 @@ export namespace App {
     /** Begin initializing process */
     async function BeginInitialize() {
         try {
-            ISO = await Util.GetISOData()
-
             setControls();
 
             guessButtonState(false);
 
-            CurrentLayer = (localStorage.getItem("mapLayer") as LAYER) ?? Enum.LAYER.STREETS;
-
-            setMap();
-
-            addEventListeners();
+            CurrentLayer = localStorage.getItem("mapLayer") ?? DefaultLayerName;
 
             while (!WasAuthHandlerInvoked) {
                 Logger.debug("Waiting for Twitch auth handler...");

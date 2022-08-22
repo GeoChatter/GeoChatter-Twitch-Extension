@@ -4,8 +4,6 @@ import { Enum } from "./enums"
 
 declare global
 {
-    /** Map layers */
-    export type LAYER = Enum.LAYER
     /** Error types */
     export type FAIL_NAME = Enum.FAIL_NAME
     /** Guess states */
