@@ -497,7 +497,7 @@ export namespace App {
                 Map.removeLayer(_lay);
                 CurrentLayer = n;
                 l.LeafletLayer?.addTo(Map);
-                localStorage.setItem("mapLayer", CurrentLayer);
+                localStorage.setItem("mapLayerv100", CurrentLayer);
             });
 
         if (Control.LayersDropdown) $(Control.LayersDropdown).append(b)
@@ -884,7 +884,7 @@ export namespace App {
 
         curr.LeafletLayer?.addTo(Map);
 
-        localStorage.setItem("mapLayer", CurrentLayer);
+        localStorage.setItem("mapLayerv100", CurrentLayer);
     }
 
     /** Marker click handle */
@@ -1198,7 +1198,7 @@ export namespace App {
 
             guessButtonState(false);
 
-            CurrentLayer = localStorage.getItem("mapLayer") ?? DefaultLayerName;
+            CurrentLayer = localStorage.getItem("mapLayerv100") ?? DefaultLayerName;
 
             while (!WasAuthHandlerInvoked) {
                 Logger.debug("Waiting for Twitch auth handler...");
