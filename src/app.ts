@@ -214,9 +214,8 @@ export namespace App {
 
         let lats = localStorage.getItem("LastGuessLat") ?? "0";
         let lngs = localStorage.getItem("LastGuessLng") ?? "0";
-        let lts = parseFloat(lats);
-        let lns = parseFloat(lngs)
-        CurrentGuess = { lat: lts, lng: lns };
+        CurrentGuess.lat = parseFloat(lats);
+        CurrentGuess.lng = parseFloat(lngs);
 
         nextGuessRand = false;
         nextGuessTemp = false;
@@ -754,6 +753,11 @@ export namespace App {
         if (User.id) localStorage.setItem("user_id", User.id);
         if (User.login) localStorage.setItem("user_login", User.login);
         if (User.display_name) localStorage.setItem("user_display_name", User.display_name);
+
+        let lats = localStorage.getItem("LastGuessLat") ?? "0";
+        let lngs = localStorage.getItem("LastGuessLng") ?? "0";
+        CurrentGuess.lat = parseFloat(lats);
+        CurrentGuess.lng = parseFloat(lngs);
     }
 
     function handleColorChange() {
