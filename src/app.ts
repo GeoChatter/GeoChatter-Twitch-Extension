@@ -980,6 +980,7 @@ export namespace App {
 
             switch (data.provider)
             {
+                case "OSM":
                 case "MapBox":
                     {
                         leaf = L.tileLayer(urlFromLayer(data), {
