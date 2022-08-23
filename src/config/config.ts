@@ -1,5 +1,5 @@
 const twitch = window.Twitch.ext;
-const VERSION = "v100";
+const VERSION = "v110";
 
 var AuthData = {} as Twitch.ext.Authorized; 
 
