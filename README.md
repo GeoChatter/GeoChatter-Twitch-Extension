@@ -10,6 +10,5 @@ GeoChatter-Map Twitch extension source code
 - Run **build.sh** to compile and build everything
 
 - ***./dist*** folder and **dist.zip** archive contains the final output extension contents
-  + MapBox access keys needs to be modified for local development
   
-- To switch between development and production hubs, use *localStorage* to set *debugEnabled* to a valid boolean valued string for development hub. 
+- To switch between development and production hubs, use the extension configuration window to switch environments. 
