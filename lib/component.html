@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>GeoChatter-Map Leaflet/MapBox</title>
+
+    <base target="_blank">
+
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <script src="https://extension-files.twitch.tv/helper/v1/twitch-ext.min.js"></script>
+
+    <link rel="stylesheet" href="./leaflet.css" />
+    <link rel="stylesheet" href="./overlay.css" />
+
+    <script src="./jquery-3.6.0.min.js"></script>
+</head>
+
+<body>
+    <div id="flagLine" class="flagLine">
+        <div id="flagContainer">
+            <div id="flagContainerImage" style="display: none"></div>
+        </div>
+        <div id="featureName" style="display: none"></div>
+    </div>
+    <div class="map-wrapper">
+        <div id="map"></div>
+    </div>
+    <div class="btncontainer">
+        <div id="settingCard" style="display:none">
+            <div>
+                <input type="checkbox" id="FlagCB" name="FlagCB">
+                <label for="FlagCB">Display flags of countries/regions on top</label>
+            </div>
+            <div><input type="checkbox" id="BorderCB" name="BorderCB">
+                <label for="BorderCB">Display borders of countries/regions</label>
+            </div>
+            <div><input type="checkbox" id="TempCB" name="TempCB">
+                <label for="TempCB">Send temporary guesses when clicking the map</label>
+            </div>
+            <div>
+                <button id="reloadBtn" data-tooltip="Reload the extension" class="dropbtn"></button>
+                <button id="infoBtn" data-tooltip="Show Logs" class="dropbtn"></button>
+            </div>
+            <div>
+                <textarea id="infoArea" placeholder="Press the 'i' button to get the log messages..."></textarea>
+            </div>
+        </div>
+        <div class="layer-top">
+            <div class="layersContainer">
+                <div class="dropdown">
+                    <button id="layersBtn" data-tooltip="Change map layers" class="dropbtn optionBtn"></button>
+                    <div id="layers" class="dropdown-content">
+                    </div>
+                </div>
+            </div>
+
+            <div class="layersContainer">
+                <div id="colorBtn" data-tooltip="Pick your username color" class="dropbtn optionBtn">
+                    <input id="colorPicker" type="color" name="colorPicker" value="#0e7e09">
+                </div>
+            </div>
+            <div class="layersContainer">
+                <div class="dropdown">
+                    <button id="flagsBtn" data-tooltip="Pick your flag" class="dropbtn optionBtn"></button>
+                    <div id="flagDropdown" class="dropdown-content">
+                        <a><span>Loading flags...</span></a>
+                    </div>
+                </div>
+            </div>
+            <div class="layersContainer">
+                <button id="settingsBtn" data-tooltip="Settings" class="dropbtn"></button>
+            </div>
+        </div>
+        <div class="layer-bottom">
+            <div class="layersContainer-bottom">
+                <div id="randomBtn" data-tooltip="Send a random guess" class="optionBtn">
+
+                </div>
+            </div>
+            <div class="layersContainer-bottom">
+                <div id="guessBtn" data-tooltip="Make your guess!">Initializing...</div>
+            </div>
+        </div>
+    </div>
+    <div id="debugLine" class="debugLine">Initializing...</div>
+    <script src="./main.js"></script>
+</body>
+
+</html>
